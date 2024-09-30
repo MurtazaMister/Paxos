@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/paxos.iml" filepath="$PROJECT_DIR$/.idea/paxos.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/apaxos-MurtazaMister.iml" filepath="$PROJECT_DIR$/.idea/apaxos-MurtazaMister.iml" />
+      <module fileurl="file://$PROJECT_DIR$/paxos/paxos.iml" filepath="$PROJECT_DIR$/paxos/paxos.iml" />
     </modules>
   </component>
 </project>

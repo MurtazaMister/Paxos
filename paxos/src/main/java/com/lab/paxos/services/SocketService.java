@@ -96,13 +96,15 @@ public class SocketService {
     }
 
     private void handleIncomingMessage(Socket incoming){
-        try(BufferedReader in = new BufferedReader(new InputStreamReader(incoming.getInputStream()))){
+        try{
+            BufferedReader in = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
             PrintWriter out = new PrintWriter(incoming.getOutputStream(), true);
 
             String message;
             while((message = in.readLine()) != null){ // incoming message from another server
-                log.info("Received message: \"{}\" from server: {}", message, incoming.getInetAddress());
+                log.info("Received message: \"{}\"", message);
                 out.println("Acknowledged: "+message);
+                log.info("Sent ACK for: {}", message);
             }
         }
         catch(IOException e) {
@@ -162,9 +164,12 @@ public class SocketService {
 
     public void sendMessageToServer(int port, String message){
         try (Socket socket = new Socket("localhost", port);
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
             out.println(message);
             log.info("Sent message to port {}: {}", port, message);
+            String ack = in.readLine();
+            log.info("Received ACK from port {}: {}", port, ack);
         } catch (IOException e) {
             log.error("Failed to send message to port {}: {}", port, e.getMessage());
         }
