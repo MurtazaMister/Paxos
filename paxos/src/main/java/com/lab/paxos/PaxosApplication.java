@@ -22,7 +22,7 @@ public class PaxosApplication {
 	@Bean
 	CommandLineRunner startServer(SocketService socketService){
 		return args -> {
-			// envConfig.testDatabaseCredentials();
+			envConfig.testDatabaseCredentials();
 			socketService.startServerSocket();
 		};
 	}

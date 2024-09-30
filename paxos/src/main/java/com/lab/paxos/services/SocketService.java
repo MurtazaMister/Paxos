@@ -25,7 +25,7 @@ import java.util.List;
 @NoArgsConstructor
 public class SocketService {
     private List<Integer> PORT_POOL;
-    // private final List<Socket> connectedSockets = new ArrayList<>();
+
     private int assignedPort;
 
     @Value("${server.port.pool}")
@@ -40,17 +40,18 @@ public class SocketService {
                 .map(String::trim)  // Trim whitespace
                 .map(Integer::parseInt)  // Convert to Integer
                 .forEach(PORT_POOL::add);
-    }
-
-    public void startServerSocket(){
-        log.info("Starting ServerSocket");
         assignedPort = findAvailablePort();
         if(assignedPort == -1){
             log.error("All ports exhausted. \n" +
                     "Recommendation: Increase port pool size.\n" +
                     "Terminating.");
-            return;
+        } else {
+            log.info("Assigned port: {}", assignedPort);
         }
+    }
+
+    public void startServerSocket(){
+        log.info("Starting ServerSocket");
 
         try (ServerSocket serverSocket = new ServerSocket(assignedPort)) {
             log.info("Server listening on port: {}", assignedPort);
