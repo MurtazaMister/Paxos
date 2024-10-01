@@ -16,15 +16,23 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name="sender_account_id", nullable=false)
-    private UserAccount sender;
+    @Column(name = "sender_account_id", nullable = false)
+    private Long senderId;
 
-    @ManyToOne
-    @JoinColumn(name="receiver_account_id", nullable=false)
-    private UserAccount receiver;
+    @Column(name = "receiver_account_id", nullable = false)
+    private Long receiverId;
 
     private BigDecimal amount;
 
     private LocalDateTime timestamp;
+
+    // Enum for transaction status
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TransactionStatus status;
+
+    public enum TransactionStatus {
+        INITIALIZED, COMMITTED
+    }
+
 }

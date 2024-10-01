@@ -14,4 +14,13 @@ public class TransactionBlock {
     private List<Transaction> transactions;
 
     private String hash;
+
+    // Enum for block status
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BlockStatus status;
+
+    public enum BlockStatus {
+        INITIALIZED, ACCEPTED, COMMITTED
+    }
 }

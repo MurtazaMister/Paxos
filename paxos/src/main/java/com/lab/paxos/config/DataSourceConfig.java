@@ -1,6 +1,7 @@
 package com.lab.paxos.config;
 
-import com.lab.paxos.services.SocketService;
+import com.lab.paxos.service.DatabaseResetService;
+import com.lab.paxos.service.SocketService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +31,7 @@ public class DataSourceConfig {
 
     @Bean
     public DataSource dataSource() {
-        log.info("In datasource");
+        log.debug("In datasource");
         int assignedPort = socketService.getAssignedPort();
         String url = String.format("%s_%d", baseUrl, assignedPort);
 
