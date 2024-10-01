@@ -6,16 +6,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import javax.sql.DataSource;
 
 @Configuration
 @Slf4j
+@DependsOn("envConfig")
 public class DataSourceConfig {
 
-    private final SocketService socketService;
+    @Autowired
+    private SocketService socketService;
 
     @Value("${spring.datasource.username}")
     private String username;
@@ -24,17 +26,13 @@ public class DataSourceConfig {
     private String password;
 
     @Value("${spring.datasource.url}")
-    private String database_name;
-
-    public DataSourceConfig(SocketService socketService) {
-        this.socketService = socketService;
-        log.info("Passing assigned port, {}, to database URL", socketService.getAssignedPort());
-    }
+    private String baseUrl;
 
     @Bean
     public DataSource dataSource() {
+        log.info("In datasource");
         int assignedPort = socketService.getAssignedPort();
-        String url = String.format("%s_%d", database_name, assignedPort);
+        String url = String.format("%s_%d", baseUrl, assignedPort);
 
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setUrl(url);

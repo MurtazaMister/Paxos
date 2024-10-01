@@ -2,23 +2,19 @@ package com.lab.paxos.config;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Configuration;
 
-@Service
+@Configuration
 @Slf4j
 public class EnvConfig {
 
-    private final Dotenv dotenv;
+    public EnvConfig(){
+        Dotenv dotenv = Dotenv.configure().load();
 
-    @Autowired
-    public EnvConfig(Dotenv dotenv) {
-        this.dotenv = dotenv;
-    }
+        System.setProperty("db_username", dotenv.get("db_username"));
+        System.setProperty("db_password", dotenv.get("db_password"));
+        System.setProperty("db_url", dotenv.get("db_url"));
 
-    public void testDatabaseCredentials() {
-        // Use the dbPassword
-        log.info("Database username: {}", dotenv.get("db_username"));
-        log.info("Database password: {}", dotenv.get("db_password"));
+        log.info("System properties set");
     }
 }

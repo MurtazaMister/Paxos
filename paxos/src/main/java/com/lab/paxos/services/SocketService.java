@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -31,6 +32,8 @@ public class SocketService {
     @Value("${server.port.pool}")
     private String portPool;
 
+    private ServerSocket serverSocket;
+
     @PostConstruct
     public void init() {
         log.info("PortPool: {}", portPool);
@@ -40,6 +43,7 @@ public class SocketService {
                 .map(String::trim)  // Trim whitespace
                 .map(Integer::parseInt)  // Convert to Integer
                 .forEach(PORT_POOL::add);
+
         assignedPort = findAvailablePort();
         if(assignedPort == -1){
             log.error("All ports exhausted. \n" +
@@ -48,23 +52,25 @@ public class SocketService {
         } else {
             log.info("Assigned port: {}", assignedPort);
         }
-    }
-
-    public void startServerSocket(){
         log.info("Starting ServerSocket");
 
-        try (ServerSocket serverSocket = new ServerSocket(assignedPort)) {
+        try{
+            serverSocket = new ServerSocket(assignedPort);
             log.info("Server listening on port: {}", assignedPort);
-
-            // A thread to listen for commands on the terminal
-            new Thread(this::listenForCommands).start();
-            // A thread to listen for incoming messages
-            // new Thread(() -> listenForIncomingMessages(serverSocket)).start();
-            listenForIncomingMessages(serverSocket);
         }
         catch (IOException e){
             log.trace("IOException: {}", e.getMessage());
         }
+    }
+
+    public void startServerSocket(){
+        log.info("Socket open for incoming connections and commands");
+
+        // A thread to listen for commands on the terminal
+        new Thread(this::listenForCommands).start();
+
+        // A thread to listen for incoming messages
+        listenForIncomingMessages(serverSocket);
     }
 
     private int findAvailablePort(){
