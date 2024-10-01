@@ -15,9 +15,13 @@ public class PaxosApplication {
 
 	@Bean
 	CommandLineRunner startServer(SocketService socketService){
-		return args -> {
-			socketService.startServerSocket();
+		CommandLineRunner commandLineRunner = new CommandLineRunner() {
+			@Override
+			public void run(String... args) throws Exception {
+				socketService.startServerSocket();
+			}
 		};
+		return commandLineRunner;
 	}
 
 }
