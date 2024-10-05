@@ -2,6 +2,7 @@ package com.lab.paxos.controller;
 
 import com.lab.paxos.model.UserAccount;
 import com.lab.paxos.repository.UserAccountRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,12 +12,14 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/user")
+@Slf4j
 public class UserAccountController {
     @Autowired
     UserAccountRepository userAccountRepository;
 
     @GetMapping("/getId")
     public ResponseEntity<Long> getUserIdByUsername(@RequestParam String username) {
+        log.info("getUserIdByUsername() called with username: {}", username);
         UserAccount userAccount = userAccountRepository.findByUsername(username);
         if(userAccount != null) {
             return ResponseEntity.ok(userAccount.getId());
@@ -26,9 +29,11 @@ public class UserAccountController {
 
     @PostMapping("/validate")
     public ResponseEntity<Boolean> validateUser(@RequestBody UserAccount bodyUserAccount){
+        log.info("validateUser() called with user: {}, {}, {}", bodyUserAccount.getId(), bodyUserAccount.getPassword(), bodyUserAccount.getBalance());
         Optional<UserAccount> optionalUserAccount = userAccountRepository.findById(bodyUserAccount.getId());
         if(optionalUserAccount.isPresent()){
             UserAccount userAccount = optionalUserAccount.get();
+            log.info("validateUser() called with user: {}, {}", userAccount.getId(), userAccount.getPassword());
 
             boolean isValid = userAccount.getPassword().equals(bodyUserAccount.getPassword());
 

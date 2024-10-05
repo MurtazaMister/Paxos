@@ -76,8 +76,9 @@ public class SocketService {
             listenForIncomingMessages(serverSocket);
 
         }
-
-        else clientService.startClient();
+        else{
+            clientService.startClient();
+        }
     }
 
     private int findAvailablePort(){

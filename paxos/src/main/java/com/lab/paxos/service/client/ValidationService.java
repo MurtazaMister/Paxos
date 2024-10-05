@@ -14,8 +14,14 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 @Slf4j
 public class ValidationService {
+
+    @Autowired
     private final RestTemplate restTemplate;
+
+    @Autowired
     private ApiConfig apiConfig;
+
+    @Autowired
     private ApiService apiService;
 
     @Value("${rest.server.url}")
@@ -32,31 +38,34 @@ public class ValidationService {
     }
 
     public Long identifyServer(String username) {
+        Long id = -1L;
         int firstPort = Integer.parseInt(initPort.split(",")[0]);
         String url = restServerUrl+":"+Integer.toString(firstPort+Integer.parseInt(offset))+"/user/getId";
         log.info("Sending req: {}", url);
         try {
-            Long id = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url)
+            id = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url)
                     .queryParam("username", username)
                     .toUriString(), Long.class);
-
             int respectivePort = firstPort + Integer.parseInt(offset) + Math.toIntExact(id) - 1;
             log.info("Connected to server port {}", respectivePort);
             apiConfig.setApiPort(respectivePort);
             apiConfig.setRestServerUrlWithPort(restServerUrl + ":" + apiConfig.getApiPort());
 
-            return id;
         } catch (HttpClientErrorException e) {
-            if(e.getStatusCode().value() == 404) return null;
+            if(e.getStatusCode().value() == 404){
+                return -1L;
+            }
             else log.trace(e.getMessage());
         } catch (Exception e) {
             log.trace(e.getMessage());
         }
-        return -1L;
+        return id;
     }
 
     public boolean validate(Long id, String password){
-        return apiService.validate(id, password);
+        if(apiService.validate(id, password) == true)
+            return true;
+        return false;
     }
 
 }

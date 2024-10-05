@@ -18,7 +18,7 @@ public class UserAccount {
     private Long id;
     private String username;
     private String password;
-    private BigDecimal balance;
+    private Long balance;
 
     public UserAccount(Long id, String password){
         this.id = id;
