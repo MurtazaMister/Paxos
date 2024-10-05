@@ -28,7 +28,6 @@ public class Transaction {
 
     private LocalDateTime timestamp;
 
-    // Enum for transaction status
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TransactionStatus status;

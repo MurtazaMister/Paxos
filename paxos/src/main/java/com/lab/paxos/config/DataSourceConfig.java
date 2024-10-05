@@ -1,6 +1,5 @@
 package com.lab.paxos.config;
 
-import com.lab.paxos.service.DatabaseResetService;
 import com.lab.paxos.service.SocketService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +30,10 @@ public class DataSourceConfig {
 
     @Bean
     public DataSource dataSource() {
-        log.debug("In datasource");
         int assignedPort = socketService.getAssignedPort();
 
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
+
         if(assignedPort>0){
             String url = String.format("%sroyal_bank_%d", baseUrl, assignedPort);
             dataSource.setUrl(url);
@@ -42,12 +41,13 @@ public class DataSourceConfig {
             dataSource.setPassword(password);
             log.info("Connected to database url: {}", url);}
         else{
-            log.info("No datasource found");
+            log.info("Datasource connection skipped for client");
             String url = String.format("%stest", baseUrl);
             dataSource.setUrl(url);
             dataSource.setUsername(username);
             dataSource.setPassword(password);
         }
+
         return dataSource;
     }
 }

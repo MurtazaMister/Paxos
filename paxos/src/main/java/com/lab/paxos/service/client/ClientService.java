@@ -4,10 +4,8 @@ import com.lab.paxos.service.ExitService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 
 @Service
@@ -23,21 +21,26 @@ public class ClientService {
     private Long userId;
 
     public void startClient(){
+
         try(BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))){
+
             System.out.print("username:");
             String username = reader.readLine();
 
             userId = validationService.identifyServer(username);
+
             if(userId == -1){
                 log.error("Invalid username");
                 exitService.exitApplication(0);
                 return;
             }
+
             System.out.print("password:");
             String password = reader.readLine();
-            log.info("Received password: {}", password);
+
             // Validating credentials
             boolean validUser = validationService.validate(userId, password);
+
             if(validUser){
                 log.info("User validated");
             }

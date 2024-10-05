@@ -19,25 +19,30 @@ public class UserAccountController {
 
     @GetMapping("/getId")
     public ResponseEntity<Long> getUserIdByUsername(@RequestParam String username) {
+
         log.info("getUserIdByUsername() called with username: {}", username);
+
         UserAccount userAccount = userAccountRepository.findByUsername(username);
         if(userAccount != null) {
             return ResponseEntity.ok(userAccount.getId());
         }
         return ResponseEntity.notFound().build();
+
     }
 
     @PostMapping("/validate")
     public ResponseEntity<Boolean> validateUser(@RequestBody UserAccount bodyUserAccount){
-        log.info("validateUser() called with user: {}, {}, {}", bodyUserAccount.getId(), bodyUserAccount.getPassword(), bodyUserAccount.getBalance());
+
         Optional<UserAccount> optionalUserAccount = userAccountRepository.findById(bodyUserAccount.getId());
+
         if(optionalUserAccount.isPresent()){
+
             UserAccount userAccount = optionalUserAccount.get();
-            log.info("validateUser() called with user: {}, {}", userAccount.getId(), userAccount.getPassword());
 
             boolean isValid = userAccount.getPassword().equals(bodyUserAccount.getPassword());
 
             return ResponseEntity.ok(isValid);
+
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);
     }

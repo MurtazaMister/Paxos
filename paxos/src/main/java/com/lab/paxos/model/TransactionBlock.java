@@ -9,6 +9,7 @@ import java.util.List;
 @Entity
 @NoArgsConstructor
 public class TransactionBlock implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
     @Id

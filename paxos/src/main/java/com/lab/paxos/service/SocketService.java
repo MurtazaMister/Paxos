@@ -26,14 +26,16 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 public class SocketService {
+
     @Autowired
     private ClientService clientService;
-    private List<Integer> PORT_POOL;
-
-    private int assignedPort;
 
     @Value("${server.port.pool}")
     private String portPool;
+
+    private List<Integer> PORT_POOL;
+
+    private int assignedPort;
 
     private ServerSocket serverSocket;
 
@@ -48,25 +50,24 @@ public class SocketService {
                 .forEach(PORT_POOL::add);
 
         assignedPort = findAvailablePort();
-        if(assignedPort == -1){
+        if (assignedPort == -1) {
             log.warn("Converting to client");
         } else {
             log.info("Assigned port: {}", assignedPort);
             log.info("Starting ServerSocket");
 
-            try{
+            try {
                 serverSocket = new ServerSocket(assignedPort);
                 log.info("Server listening on port: {}", assignedPort);
-            }
-            catch (IOException e){
+            } catch (IOException e) {
                 log.trace("IOException: {}", e.getMessage());
             }
         }
 
     }
 
-    public void startServerSocket(){
-        if(assignedPort != -1){
+    public void startServerSocket() {
+        if (assignedPort != -1) {
             log.info("Socket open for incoming connections and commands");
 
             // A thread to listen for commands on the terminal
@@ -75,74 +76,69 @@ public class SocketService {
             // A thread to listen for incoming messages
             listenForIncomingMessages(serverSocket);
 
-        }
-        else{
+        } else {
             clientService.startClient();
         }
     }
 
-    private int findAvailablePort(){
-        for(int port : PORT_POOL){
-            if(isPortAvailable(port)){
+    private int findAvailablePort() {
+        for (int port : PORT_POOL) {
+            if (isPortAvailable(port)) {
                 return port;
             }
         }
         return -1;
     }
 
-    private boolean isPortAvailable(int port){
-        try(ServerSocket serverSocket = new ServerSocket(port)){
+    private boolean isPortAvailable(int port) {
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
             return true; // Port is available
         } catch (Exception e) {
             return false; // Port unavailable
         }
     }
 
-    private void listenForIncomingMessages(ServerSocket serverSocket){
-        try{
-            while(true){
+    private void listenForIncomingMessages(ServerSocket serverSocket) {
+        try {
+            while (true) {
                 Socket incoming = serverSocket.accept();
                 new Thread(() -> handleIncomingMessage(incoming)).start();
             }
-        }
-        catch(IOException e){
+        } catch (IOException e) {
             log.trace("Error while listening for incoming messages\n{}", e.getMessage());
         }
     }
 
-    private void handleIncomingMessage(Socket incoming){
-        try{
+    private void handleIncomingMessage(Socket incoming) {
+        try {
             BufferedReader in = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
             PrintWriter out = new PrintWriter(incoming.getOutputStream(), true);
 
             String message;
-            while((message = in.readLine()) != null){ // incoming message from another server
+            while ((message = in.readLine()) != null) { // incoming message from another server
                 log.info("Received message: \"{}\"", message);
-                out.println("Acknowledged: "+message);
+                out.println("Acknowledged: " + message);
                 log.info("Sent ACK for: {}", message);
             }
-        }
-        catch(IOException e) {
+        } catch (IOException e) {
             log.trace("IOException: {}", e.getMessage());
-        }
-        finally {
-            try{
+        } finally {
+            try {
                 incoming.close();
-            }
-            catch(IOException e){
+            } catch (IOException e) {
                 log.trace("IOException: {}", e.getMessage());
             }
         }
     }
 
-    private void listenForCommands(){
-        try(BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))){
+    private void listenForCommands() {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
             String input;
-            while(true){
+            while (true) {
                 log.info("Enter commands: b (broadcast) <message> | s (send) <port> <message>");
                 input = reader.readLine();
 
-                if(input != null) {
+                if (input != null) {
                     String[] parts = input.split(" ");
 
                     switch (parts[0]) {
@@ -169,18 +165,18 @@ public class SocketService {
         }
     }
 
-    public void broadcast(String message){
-        for(int port : PORT_POOL){
-            if(port != assignedPort){
+    public void broadcast(String message) {
+        for (int port : PORT_POOL) {
+            if (port != assignedPort) {
                 sendMessageToServer(port, message);
             }
         }
     }
 
-    public void sendMessageToServer(int port, String message){
+    public void sendMessageToServer(int port, String message) {
         try (Socket socket = new Socket("localhost", port);
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
             out.println(message);
             log.info("Sent message to port {}: {}", port, message);
             String ack = in.readLine();

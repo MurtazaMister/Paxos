@@ -9,6 +9,6 @@ public class DotEnvConfig {
 
     @Bean
     public Dotenv dotenv() {
-        return Dotenv.load();  // This loads the .env file
+        return Dotenv.load();
     }
 }
