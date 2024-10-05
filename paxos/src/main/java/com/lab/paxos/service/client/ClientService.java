@@ -21,6 +21,8 @@ public class ClientService {
 
     private Long userId;
     private ApiConfig apiConfig;
+    @Autowired
+    private ApiService apiService;
 
     public void startClient(){
 
@@ -81,6 +83,7 @@ public class ClientService {
                             logoutFlag = true;
                             break;
                         case "b":
+                            System.out.println("Balance: $"+apiService.balanceCheck(userId));
                             break;
                         case "s":
                             break;

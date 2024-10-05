@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @Slf4j
@@ -28,5 +30,25 @@ public class ApiService {
         HttpEntity<UserAccount> request = new HttpEntity<>(ua, headers);
         ResponseEntity<Boolean> response = restTemplate.exchange(url, HttpMethod.POST, request, Boolean.class);
         return response.getBody();
+    }
+
+    // balance check
+    public Long balanceCheck(Long id){
+        String url = apiConfig.getRestServerUrlWithPort()+"/user/balance";
+        log.info("Sending req: {}", url);
+
+        Long balance = 0L;
+
+        try{
+            balance = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url)
+                    .queryParam("userId", id)
+                    .toUriString(), Long.class);
+        } catch (HttpClientErrorException e) {
+            log.trace(e.getMessage());
+        } catch (Exception e) {
+            log.trace(e.getMessage());
+        }
+
+        return Long.parseLong(Long.toString(balance));
     }
 }

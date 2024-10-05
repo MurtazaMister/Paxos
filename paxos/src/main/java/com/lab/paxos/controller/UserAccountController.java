@@ -20,7 +20,7 @@ public class UserAccountController {
     @GetMapping("/getId")
     public ResponseEntity<Long> getUserIdByUsername(@RequestParam String username) {
 
-        log.info("getUserIdByUsername() called with username: {}", username);
+        log.info("getUserIdByUsername(username) called with username: {}", username);
 
         UserAccount userAccount = userAccountRepository.findByUsername(username);
         if(userAccount != null) {
@@ -32,6 +32,8 @@ public class UserAccountController {
 
     @PostMapping("/validate")
     public ResponseEntity<Boolean> validateUser(@RequestBody UserAccount bodyUserAccount){
+
+        log.info("validateUser(userAccount) called with userId: {}", bodyUserAccount.getId());
 
         Optional<UserAccount> optionalUserAccount = userAccountRepository.findById(bodyUserAccount.getId());
 
@@ -45,5 +47,20 @@ public class UserAccountController {
 
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(false);
+    }
+
+    @GetMapping("/balance")
+    public ResponseEntity<Long> balanceCheck(@RequestParam Long userId){
+
+        log.info("balanceCheck(userId) called with id: {}", userId);
+
+        UserAccount userAccount = userAccountRepository.findById(userId).orElse(null);
+
+        if(userAccount != null){
+            return ResponseEntity.ok(userAccount.getBalance());
+        }
+
+        return ResponseEntity.notFound().build();
+
     }
 }
