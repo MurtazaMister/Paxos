@@ -51,4 +51,9 @@ public class ApiService {
 
         return Long.parseLong(Long.toString(balance));
     }
+
+    // fail current server
+    public Boolean failServer(){
+
+    }
 }

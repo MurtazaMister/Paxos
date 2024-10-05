@@ -71,6 +71,7 @@ public class ClientService {
                         - b (check balance)
                         - s (send) <receiver_username> <amount>
                         - e (exit)
+                        - f (fail server)
                         """);
                 input = reader.readLine();
 
@@ -89,6 +90,9 @@ public class ClientService {
                             break;
                         case "e":
                             exitFlag = true;
+                            break;
+                        case "f":
+
                             break;
                         default:
                             log.warn("Unknown command: {}", parts[0]);
