@@ -1,5 +1,6 @@
 package com.lab.paxos.service.client;
 
+import com.lab.paxos.config.client.ApiConfig;
 import com.lab.paxos.service.ExitService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ public class ClientService {
     private ValidationService validationService;
 
     private Long userId;
+    private ApiConfig apiConfig;
 
     public void startClient(){
 
@@ -43,6 +45,7 @@ public class ClientService {
 
             if(validUser){
                 log.info("User validated");
+                listenForCommands();
             }
             else {
                 log.error("Invalid password");
@@ -52,6 +55,58 @@ public class ClientService {
 
         } catch (Exception e) {
             log.trace("Exception: {}", e.getMessage());
+        }
+    }
+
+    private void listenForCommands(){
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))){
+            String input;
+            boolean logoutFlag = false, exitFlag = false;
+            while(true){
+                System.out.println("""
+                        Enter commands:
+                        - l (logout)
+                        - b (check balance)
+                        - s (send) <receiver_username> <amount>
+                        - e (exit)
+                        """);
+                input = reader.readLine();
+
+                if(input != null){
+                    String[] parts = input.split(" ");
+
+                    switch(parts[0]){
+                        case "l":
+                            userId = -1L;
+                            logoutFlag = true;
+                            break;
+                        case "b":
+                            break;
+                        case "s":
+                            break;
+                        case "e":
+                            exitFlag = true;
+                            break;
+                        default:
+                            log.warn("Unknown command: {}", parts[0]);
+                            break;
+                    }
+
+                    if(logoutFlag || exitFlag){
+                        break;
+                    }
+                }
+            }
+            if(logoutFlag){
+                log.info("Logged out successfully. Login again.");
+                startClient();
+            } else if (exitFlag) {
+                log.info("Have a great day!");
+                exitService.exitApplication(0);
+            }
+        }
+        catch(Exception e){
+            log.trace("Error reading input: {}", e.getMessage());
         }
     }
 }
