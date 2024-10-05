@@ -1,10 +1,12 @@
 package com.lab.paxos.service;
 
+import com.lab.paxos.service.client.ClientService;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +26,8 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 public class SocketService {
+    @Autowired
+    private ClientService clientService;
     private List<Integer> PORT_POOL;
 
     private int assignedPort;
@@ -45,32 +49,35 @@ public class SocketService {
 
         assignedPort = findAvailablePort();
         if(assignedPort == -1){
-            log.error("""
-                    All ports exhausted.\s
-                    Recommendation: Increase port pool size.
-                    Terminating.""");
+            log.warn("Converting to client");
         } else {
             log.info("Assigned port: {}", assignedPort);
-        }
-        log.info("Starting ServerSocket");
+            log.info("Starting ServerSocket");
 
-        try{
-            serverSocket = new ServerSocket(assignedPort);
-            log.info("Server listening on port: {}", assignedPort);
+            try{
+                serverSocket = new ServerSocket(assignedPort);
+                log.info("Server listening on port: {}", assignedPort);
+            }
+            catch (IOException e){
+                log.trace("IOException: {}", e.getMessage());
+            }
         }
-        catch (IOException e){
-            log.trace("IOException: {}", e.getMessage());
-        }
+
     }
 
     public void startServerSocket(){
-        log.info("Socket open for incoming connections and commands");
+        if(assignedPort != -1){
+            log.info("Socket open for incoming connections and commands");
 
-        // A thread to listen for commands on the terminal
-        new Thread(this::listenForCommands).start();
+            // A thread to listen for commands on the terminal
+            new Thread(this::listenForCommands).start();
 
-        // A thread to listen for incoming messages
-        listenForIncomingMessages(serverSocket);
+            // A thread to listen for incoming messages
+            listenForIncomingMessages(serverSocket);
+
+        }
+
+        else clientService.startClient();
     }
 
     private int findAvailablePort(){

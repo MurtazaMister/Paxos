@@ -33,15 +33,21 @@ public class DataSourceConfig {
     public DataSource dataSource() {
         log.debug("In datasource");
         int assignedPort = socketService.getAssignedPort();
-        String url = String.format("%s_%d", baseUrl, assignedPort);
 
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setUrl(url);
-        dataSource.setUsername(username);
-        dataSource.setPassword(password);
-
-        log.info("Connected to database url: {}", url);
-
+        if(assignedPort>0){
+            String url = String.format("%sroyal_bank_%d", baseUrl, assignedPort);
+            dataSource.setUrl(url);
+            dataSource.setUsername(username);
+            dataSource.setPassword(password);
+            log.info("Connected to database url: {}", url);}
+        else{
+            log.info("No datasource found");
+            String url = String.format("%stest", baseUrl);
+            dataSource.setUrl(url);
+            dataSource.setUsername(username);
+            dataSource.setPassword(password);
+        }
         return dataSource;
     }
 }

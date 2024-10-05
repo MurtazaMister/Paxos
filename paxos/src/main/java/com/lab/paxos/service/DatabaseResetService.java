@@ -24,7 +24,8 @@ public class DatabaseResetService {
         }
         // Reviving foreign key checks
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1;");
+        jdbcTemplate.execute("update user_account set balance = 100 where id>0;");
 
-        log.warn("Transaction tables reset");
+        log.warn("Transaction tables and balances reset");
     }
 }

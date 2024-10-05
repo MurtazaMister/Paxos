@@ -3,9 +3,9 @@ package com.lab.paxos.config;
 import com.lab.paxos.service.SocketService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.embedded.tomcat.ConfigurableTomcatWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
-import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -20,13 +20,16 @@ public class RestConfig {
     @Autowired
     private SocketService socketService;
 
+    @Value("${rest.server.offset}")
+    private String offset;
+
     @Bean
     public WebServerFactoryCustomizer<ConfigurableTomcatWebServerFactory> webServerCustomizer() {
-        return factory -> {
+        return socketService.getAssignedPort() > 0 ? factory -> {
             int socketPort = socketService.getAssignedPort();
-            int restPort = socketPort + 10;
+            int restPort = socketPort + Integer.parseInt(offset);
             log.info("Rest port identified: {}", restPort);
             factory.setPort(restPort);
-        };
+        } : null;
     }
 }

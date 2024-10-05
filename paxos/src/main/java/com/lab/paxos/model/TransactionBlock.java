@@ -1,11 +1,16 @@
 package com.lab.paxos.model;
 
 import jakarta.persistence.*;
+import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Entity
-public class TransactionBlock {
+@NoArgsConstructor
+public class TransactionBlock implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long idx;
