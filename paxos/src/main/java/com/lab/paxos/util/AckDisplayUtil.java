@@ -11,7 +11,7 @@ public class AckDisplayUtil {
         switch (ackMessageWrapper.getType()){
 
             case ACK_SERVER_STATUS_UPDATE:
-                log.info("Received ACK from server {}: {}", ackMessageWrapper.getAckServerStatusUpdate().getFromPort(), ackMessageWrapper);
+                log.info("Received ACK from server {}: {}", ackMessageWrapper.getAckServerStatusUpdate().getFromPort(), ackMessageWrapper.getAckServerStatusUpdate());
                 break;
 
             default:

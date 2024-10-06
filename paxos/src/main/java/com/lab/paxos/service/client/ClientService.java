@@ -71,7 +71,8 @@ public class ClientService {
                         - b (check balance)
                         - s (send) <receiver_username> <amount>
                         - e (exit)
-                        - f (fail server)
+                        - f (fail server) <port (optional)>
+                        - r (resume server) <port (optional)>
                         """);
                 input = reader.readLine();
 
@@ -93,7 +94,22 @@ public class ClientService {
                             exitFlag = true;
                             break;
                         case "f":
-
+                            if(parts.length > 1){
+                                int port = Integer.parseInt(parts[1]);
+                                apiService.failServer(port);
+                            }
+                            else{
+                                apiService.failServer(null);
+                            }
+                            break;
+                        case "r":
+                            if(parts.length > 1){
+                                int port = Integer.parseInt(parts[1]);
+                                apiService.resumeServer(port);
+                            }
+                            else{
+                                apiService.resumeServer(null);
+                            }
                             break;
                         default:
                             log.warn("Unknown command: {}", parts[0]);

@@ -15,4 +15,9 @@ public class ServerStatusUpdate implements Serializable {
     private boolean failServer;
     private int toPort;
     private int fromPort;
+
+    @Override
+    public String toString() {
+        return fromPort+" says: set status of " + toPort + " to " + ((failServer)?"failed":"resume");
+    }
 }

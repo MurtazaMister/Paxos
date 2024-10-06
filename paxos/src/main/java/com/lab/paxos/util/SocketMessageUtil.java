@@ -1,11 +1,14 @@
 package com.lab.paxos.util;
 
 import com.lab.paxos.model.network.AckServerStatusUpdate;
+import com.lab.paxos.model.network.ServerStatusUpdate;
+import com.lab.paxos.service.SocketService;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
@@ -19,6 +22,13 @@ public class SocketMessageUtil {
 
     @Autowired
     AckDisplayUtil ackDisplayUtil;
+
+    @Autowired
+    ServerStatusUtil serverStatusUtil;
+
+    @Autowired
+    @Lazy
+    SocketService socketService;
 
     public void broadcast(List<Integer> PORT_POOL, int assignedPort, SocketMessageWrapper message) {
         for (int port : PORT_POOL) {
@@ -36,8 +46,6 @@ public class SocketMessageUtil {
 
             out.writeObject(message);
             out.flush();
-
-            log.info("Sent message to port {}: {}", port, message);
 
             // Receiving acknowledgement from the respective server
             ackMessageWrapper = (AckMessageWrapper) in.readObject();
@@ -64,16 +72,34 @@ public class SocketMessageUtil {
 
     private void handleIncomingMessage(@NotNull Socket incoming) {
         try {
-            BufferedReader in = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
-            PrintWriter out = new PrintWriter(incoming.getOutputStream(), true);
+            ObjectInputStream in = new ObjectInputStream(incoming.getInputStream());
+            ObjectOutputStream out = new ObjectOutputStream(incoming.getOutputStream());
 
-            String message;
-            while ((message = in.readLine()) != null) { // incoming message from another server
-                log.info("Received message: \"{}\"", message);
-                out.println("Acknowledged: " + message);
-                log.info("Sent ACK for: {}", message);
+            SocketMessageWrapper message;
+            while ((message = (SocketMessageWrapper) in.readObject()) != null) { // incoming message from another server
+
+                switch (message.getType()){
+                    case SERVER_STATUS_UPDATE:
+                        ServerStatusUpdate serverStatusUpdate = message.getServerStatusUpdate();
+                        if(serverStatusUpdate.getToPort() == socketService.getAssignedPort()){
+                            log.info("Received from port {}: {}", serverStatusUpdate.getFromPort(), serverStatusUpdate);
+
+                            serverStatusUtil.setFailed(serverStatusUpdate.isFailServer());
+
+                            AckServerStatusUpdate ackServerStatusUpdate = new AckServerStatusUpdate(serverStatusUtil.isFailed(), socketService.getAssignedPort(), serverStatusUpdate.getFromPort());
+                            AckMessageWrapper ackMessageWrapper = new AckMessageWrapper(AckMessageWrapper.MessageType.ACK_SERVER_STATUS_UPDATE, ackServerStatusUpdate);
+
+                            out.writeObject(ackMessageWrapper);
+
+                            log.info("Sent ACK to server {}: {}", ackServerStatusUpdate.getToPort(), ackMessageWrapper.getAckServerStatusUpdate());
+
+                            out.flush();
+                        }
+                        break;
+                }
+
             }
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             log.trace("IOException: {}", e.getMessage());
         } finally {
             try {

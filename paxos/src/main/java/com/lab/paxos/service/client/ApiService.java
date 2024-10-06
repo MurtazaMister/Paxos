@@ -4,6 +4,7 @@ import com.lab.paxos.config.client.ApiConfig;
 import com.lab.paxos.model.UserAccount;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -13,6 +14,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Service
 @Slf4j
 public class ApiService {
+
+    @Value("${rest.server.offset}")
+    private String offset;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -52,15 +56,16 @@ public class ApiService {
         return Long.parseLong(Long.toString(balance));
     }
 
-    // fail current server
-    public Boolean failServer(){
+    public void failServer(Integer port){
         String url = apiConfig.getRestServerUrlWithPort()+"/server/fail";
-        log.info("Sending req: {}", url);
-
+        log.info("Sending req: {} {}", url, (port!=null)?" for port "+port:"");
         Boolean failed = false;
 
         try{
-            failed = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url).toUriString(), Boolean.class);
+            if(port == null) failed = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url).toUriString(), Boolean.class);
+            else failed = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url).queryParam("port", port).toUriString(), Boolean.class);
+
+            log.info("Server at port {}'s status = {}", (port!=null)?port:(apiConfig.getApiPort()-Integer.parseInt(offset)), (failed)?"failed":"up & running");
         }
         catch (HttpClientErrorException e){
             log.trace(e.getMessage());
@@ -68,7 +73,24 @@ public class ApiService {
         catch (Exception e) {
             log.trace(e.getMessage());
         }
+    }
 
-        return failed;
+    public void resumeServer(Integer port){
+        String url = apiConfig.getRestServerUrlWithPort()+"/server/resume";
+        log.info("Sending req: {} {}", url, (port!=null)?" for port "+port:"");
+        Boolean resumed = false;
+
+        try{
+            if(port == null) resumed = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url).toUriString(), Boolean.class);
+            else resumed = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url).queryParam("port", port).toUriString(), Boolean.class);
+
+            log.info("Server at port {}'s status = {}", (port!=null)?port:(apiConfig.getApiPort()-Integer.parseInt(offset)), (!resumed)?"failed":"up & running");
+        }
+        catch (HttpClientErrorException e){
+            log.trace(e.getMessage());
+        }
+        catch (Exception e) {
+            log.trace(e.getMessage());
+        }
     }
 }

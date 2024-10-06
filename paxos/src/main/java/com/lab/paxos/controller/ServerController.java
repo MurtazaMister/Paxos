@@ -40,7 +40,7 @@ public class ServerController {
             SocketMessageWrapper socketMessageWrapper = new SocketMessageWrapper(SocketMessageWrapper.MessageType.SERVER_STATUS_UPDATE, serverStatusUpdate);
 
             AckMessageWrapper ackMessageWrapper = socketMessageUtil.sendMessageToServer(port, socketMessageWrapper);
-
+            log.info("Sending fail message to server {}", port);
             return ResponseEntity.ok(ackMessageWrapper.getAckServerStatusUpdate().isServerFailed());
         }
     }
@@ -57,7 +57,7 @@ public class ServerController {
             SocketMessageWrapper socketMessageWrapper = new SocketMessageWrapper(SocketMessageWrapper.MessageType.SERVER_STATUS_UPDATE, serverStatusUpdate);
 
             AckMessageWrapper ackMessageWrapper = socketMessageUtil.sendMessageToServer(port, socketMessageWrapper);
-
+            log.info("Sending fail message to server {}", port);
             return ResponseEntity.ok(!ackMessageWrapper.getAckServerStatusUpdate().isServerFailed());
         }
     }

@@ -15,4 +15,9 @@ public class AckServerStatusUpdate implements Serializable {
     private boolean serverFailed;
     private int fromPort;
     private int toPort;
+
+    @Override
+    public String toString() {
+        return "ACK to "+toPort+" | status of "+fromPort+"= "+((serverFailed)?"failed":"up & running");
+    }
 }
