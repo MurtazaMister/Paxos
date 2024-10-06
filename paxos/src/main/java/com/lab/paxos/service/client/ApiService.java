@@ -54,6 +54,21 @@ public class ApiService {
 
     // fail current server
     public Boolean failServer(){
-        return Boolean.FALSE;
+        String url = apiConfig.getRestServerUrlWithPort()+"/server/fail";
+        log.info("Sending req: {}", url);
+
+        Boolean failed = false;
+
+        try{
+            failed = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url).toUriString(), Boolean.class);
+        }
+        catch (HttpClientErrorException e){
+            log.trace(e.getMessage());
+        }
+        catch (Exception e) {
+            log.trace(e.getMessage());
+        }
+
+        return failed;
     }
 }

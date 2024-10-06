@@ -12,6 +12,6 @@ import org.springframework.stereotype.Component;
 public class ServerStatusUtil {
 
     // volatile for thread-safety
-    private volatile boolean hasFailed = false;
+    private volatile boolean failed = false;
 
 }

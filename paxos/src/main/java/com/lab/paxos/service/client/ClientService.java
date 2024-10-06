@@ -87,6 +87,7 @@ public class ClientService {
                             System.out.println("Balance: $"+apiService.balanceCheck(userId));
                             break;
                         case "s":
+                            log.info("Under development");
                             break;
                         case "e":
                             exitFlag = true;

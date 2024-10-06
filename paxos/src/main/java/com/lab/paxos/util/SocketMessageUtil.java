@@ -1,13 +1,14 @@
 package com.lab.paxos.util;
 
+import com.lab.paxos.model.network.AckServerStatusUpdate;
+import com.lab.paxos.wrapper.AckMessageWrapper;
+import com.lab.paxos.wrapper.SocketMessageWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
@@ -16,7 +17,10 @@ import java.util.List;
 @Slf4j
 public class SocketMessageUtil {
 
-    public void broadcast(List<Integer> PORT_POOL, int assignedPort, String message) {
+    @Autowired
+    AckDisplayUtil ackDisplayUtil;
+
+    public void broadcast(List<Integer> PORT_POOL, int assignedPort, SocketMessageWrapper message) {
         for (int port : PORT_POOL) {
             if (port != assignedPort) {
                 sendMessageToServer(port, message);
@@ -24,17 +28,27 @@ public class SocketMessageUtil {
         }
     }
 
-    public void sendMessageToServer(int port, String message) {
-        try (Socket socket = new Socket("localhost", port);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-            out.println(message);
+    public AckMessageWrapper sendMessageToServer(int port, SocketMessageWrapper message) {
+        AckMessageWrapper ackMessageWrapper = null;
+        try(Socket socket = new Socket("localhost", port);
+        ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+        ObjectInputStream in = new ObjectInputStream(socket.getInputStream())){
+
+            out.writeObject(message);
+            out.flush();
+
             log.info("Sent message to port {}: {}", port, message);
-            String ack = in.readLine();
-            log.info("Received ACK from port {}: {}", port, ack);
-        } catch (IOException e) {
-            log.error("Failed to send message to port {}: {}", port, e.getMessage());
+
+            // Receiving acknowledgement from the respective server
+            ackMessageWrapper = (AckMessageWrapper) in.readObject();
+            ackDisplayUtil.displayAcknowledgement(ackMessageWrapper);
+
         }
+        catch (IOException | ClassNotFoundException e){
+            log.trace("Failed to send message to port {}: {}", port, e.getMessage());
+        }
+
+        return ackMessageWrapper;
     }
 
     public void listenForIncomingMessages(@NotNull ServerSocket serverSocket) {
