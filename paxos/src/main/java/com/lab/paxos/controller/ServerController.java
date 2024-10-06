@@ -11,22 +11,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class ServerController {
 
     @GetMapping("/fail")
-    public ResponseEntity<Boolean> failServer(){
-
-    }
-
-    @GetMapping("/fail")
-    public ResponseEntity<Boolean> failServer(@RequestParam int port){
+    public ResponseEntity<Boolean> failServer(@RequestParam(required = false) int port){
         return ResponseEntity.ok(false);
     }
 
     @GetMapping("/resume")
-    public ResponseEntity<Boolean> resumeServer(){
-        return ResponseEntity.ok(false);
-    }
-
-    @GetMapping("/resume")
-    public ResponseEntity<Boolean> resumeServer(@RequestParam int port){
+    public ResponseEntity<Boolean> resumeServer(@RequestParam(required = false) int port){
         return ResponseEntity.ok(false);
     }
 }

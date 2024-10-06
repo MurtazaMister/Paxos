@@ -54,6 +54,6 @@ public class ApiService {
 
     // fail current server
     public Boolean failServer(){
-
+        return Boolean.FALSE;
     }
 }
