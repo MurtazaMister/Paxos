@@ -50,7 +50,7 @@ public class ClientService {
                 listenForCommands();
             }
             else {
-                log.error("Invalid password");
+                log.error("Error while logging in, please try again in a while");
                 exitService.exitApplication(0);
                 return;
             }

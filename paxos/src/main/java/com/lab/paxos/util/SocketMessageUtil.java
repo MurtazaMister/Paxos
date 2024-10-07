@@ -32,21 +32,16 @@ public class SocketMessageUtil {
     @Lazy
     SocketService socketService;
 
-    public void broadcast(List<Integer> PORT_POOL, int assignedPort, String message) {
-        for (int port : PORT_POOL) {
-            if (port != assignedPort) {
-                Message mess = new Message(message, assignedPort, port);
-                SocketMessageWrapper smw = new SocketMessageWrapper(SocketMessageWrapper.MessageType.MESSAGE, mess);
-                sendMessageToServer(port, smw);
-            }
-        }
-    }
+    public AckMessageWrapper sendMessageToServer(int port, SocketMessageWrapper message) throws IOException {
 
-    public AckMessageWrapper sendMessageToServer(int port, SocketMessageWrapper message) {
+        if(serverStatusUtil.isFailed()){
+            throw new IOException("Server Unavailable");
+        }
+
         AckMessageWrapper ackMessageWrapper = null;
         try(Socket socket = new Socket("localhost", port);
-        ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-        ObjectInputStream in = new ObjectInputStream(socket.getInputStream())){
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream in = new ObjectInputStream(socket.getInputStream())){
 
             out.writeObject(message);
             out.flush();
@@ -63,6 +58,21 @@ public class SocketMessageUtil {
         return ackMessageWrapper;
     }
 
+    public void broadcast(List<Integer> PORT_POOL, int assignedPort, String message) throws IOException {
+
+        if(serverStatusUtil.isFailed()){
+            throw new IOException("Server Unavailable");
+        }
+
+        for (int port : PORT_POOL) {
+            if (port != assignedPort) {
+                Message mess = new Message(message, assignedPort, port);
+                SocketMessageWrapper smw = new SocketMessageWrapper(SocketMessageWrapper.MessageType.MESSAGE, mess);
+                sendMessageToServer(port, smw);
+            }
+        }
+    }
+
     public void listenForIncomingMessages(@NotNull ServerSocket serverSocket) {
         try {
             while (true) {
@@ -76,11 +86,21 @@ public class SocketMessageUtil {
 
     private void handleIncomingMessage(@NotNull Socket incoming) {
         try {
+
             ObjectInputStream in = new ObjectInputStream(incoming.getInputStream());
             ObjectOutputStream out = new ObjectOutputStream(incoming.getOutputStream());
 
             SocketMessageWrapper message;
             while ((message = (SocketMessageWrapper) in.readObject()) != null) { // incoming message from another server
+
+                // failed server will accept a resume request
+                if(serverStatusUtil.isFailed()){
+                    if(!(message.getType() == SocketMessageWrapper.MessageType.SERVER_STATUS_UPDATE && !message.getServerStatusUpdate().isFailServer())){
+                        log.error("Rejecting incoming message, current server down");
+                        incoming.close();
+                        return;
+                    }
+                }
 
                 switch (message.getType()){
                     case SERVER_STATUS_UPDATE:

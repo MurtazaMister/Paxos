@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 
@@ -16,9 +17,16 @@ public class CommandUtil {
 
     @Autowired
     SocketMessageUtil socketMessageUtil;
+    @Autowired
+    private ServerStatusUtil serverStatusUtil;
 
     public void listenForCommands(List<Integer> PORT_POOL, int assignedPort) {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
+        try {
+            if(serverStatusUtil.isFailed()){
+                log.error("Rejecting incoming command, current server down");
+                return;
+            }
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             String input;
             while (true) {
                 System.out.print("""
@@ -33,7 +41,15 @@ public class CommandUtil {
 
                     switch (parts[0]) {
                         case "b":
-                            socketMessageUtil.broadcast(PORT_POOL, assignedPort, parts[1]);
+                            try{
+                                socketMessageUtil.broadcast(PORT_POOL, assignedPort, parts[1]);
+                            }
+                            catch(IOException e){
+                                log.error("Server unavailable");
+                            }
+                            catch (Exception e){
+                                log.error(e.getMessage());
+                            }
                             break;
                         case "s":
                             int targetPort = -1;
@@ -44,6 +60,11 @@ public class CommandUtil {
                                 socketMessageUtil.sendMessageToServer(targetPort, socketMessageWrapper);
                             } catch (NumberFormatException e) {
                                 log.warn("Invalid port number: {}", targetPort);
+                            }
+                            catch (IOException e){
+                                log.error("Server unavailable");
+                            } catch (Exception e) {
+                                log.error(e.getMessage());
                             }
                             break;
                         default:

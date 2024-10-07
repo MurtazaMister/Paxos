@@ -2,6 +2,7 @@ package com.lab.paxos.controller;
 
 import com.lab.paxos.model.UserAccount;
 import com.lab.paxos.repository.UserAccountRepository;
+import com.lab.paxos.util.ServerStatusUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,8 +18,13 @@ public class UserAccountController {
     @Autowired
     UserAccountRepository userAccountRepository;
 
+    @Autowired
+    ServerStatusUtil serverStatusUtil;
+
     @GetMapping("/getId")
     public ResponseEntity<Long> getUserIdByUsername(@RequestParam String username) {
+
+        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 
         log.info("getUserIdByUsername(username) called with username: {}", username);
 
@@ -32,6 +38,8 @@ public class UserAccountController {
 
     @PostMapping("/validate")
     public ResponseEntity<Boolean> validateUser(@RequestBody UserAccount bodyUserAccount){
+
+        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 
         log.info("validateUser(userAccount) called with userId: {}", bodyUserAccount.getId());
 
@@ -51,6 +59,8 @@ public class UserAccountController {
 
     @GetMapping("/balance")
     public ResponseEntity<Long> balanceCheck(@RequestParam Long userId){
+
+        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 
         log.info("balanceCheck(userId) called with id: {}", userId);
 

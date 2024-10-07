@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -28,12 +29,26 @@ public class ApiService {
     public Boolean validate(Long id, String password){
         UserAccount ua = new UserAccount(id, password);
         String url = apiConfig.getRestServerUrlWithPort()+"/user/validate";
+
         log.info("Sending req: {}", url);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<UserAccount> request = new HttpEntity<>(ua, headers);
-        ResponseEntity<Boolean> response = restTemplate.exchange(url, HttpMethod.POST, request, Boolean.class);
-        return response.getBody();
+
+        try{
+            ResponseEntity<Boolean> response = restTemplate.exchange(url, HttpMethod.POST, request, Boolean.class);
+
+            if(response.getStatusCode() == HttpStatus.OK){
+                return response.getBody();
+            }
+            else if(response.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
+                log.error("{}: Service Unavailable", response.getStatusCode());
+                return false;
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+        return false;
     }
 
     // balance check
@@ -41,19 +56,26 @@ public class ApiService {
         String url = apiConfig.getRestServerUrlWithPort()+"/user/balance";
         log.info("Sending req: {}", url);
 
-        Long balance = 0L;
+        Long balance = null;
 
         try{
             balance = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url)
                     .queryParam("userId", id)
                     .toUriString(), Long.class);
-        } catch (HttpClientErrorException e) {
-            log.trace(e.getMessage());
-        } catch (Exception e) {
-            log.trace(e.getMessage());
+            return Long.parseLong(Long.toString(balance));
+        }
+        catch (HttpClientErrorException e) {
+            log.error("Http error while fetching balance: {}", e.getStatusCode());
+        }
+        catch (ResourceAccessException e) {
+            log.error("Could not access server: {}", e.getMessage());
+        }
+        catch (Exception e) {
+            log.error("{}", e.getMessage());
         }
 
-        return Long.parseLong(Long.toString(balance));
+        return null;
+
     }
 
     public void failServer(Integer port){
