@@ -1,7 +1,9 @@
 package com.lab.paxos.util;
 
-import com.lab.paxos.model.network.AckServerStatusUpdate;
-import com.lab.paxos.model.network.ServerStatusUpdate;
+import com.lab.paxos.model.network.acknowledgements.AckMessage;
+import com.lab.paxos.model.network.acknowledgements.AckServerStatusUpdate;
+import com.lab.paxos.model.network.communique.Message;
+import com.lab.paxos.model.network.communique.ServerStatusUpdate;
 import com.lab.paxos.service.SocketService;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
@@ -30,10 +32,12 @@ public class SocketMessageUtil {
     @Lazy
     SocketService socketService;
 
-    public void broadcast(List<Integer> PORT_POOL, int assignedPort, SocketMessageWrapper message) {
+    public void broadcast(List<Integer> PORT_POOL, int assignedPort, String message) {
         for (int port : PORT_POOL) {
             if (port != assignedPort) {
-                sendMessageToServer(port, message);
+                Message mess = new Message(message, assignedPort, port);
+                SocketMessageWrapper smw = new SocketMessageWrapper(SocketMessageWrapper.MessageType.MESSAGE, mess);
+                sendMessageToServer(port, smw);
             }
         }
     }
@@ -95,6 +99,19 @@ public class SocketMessageUtil {
 
                             out.flush();
                         }
+                        break;
+                    case MESSAGE:
+                        Message mess = message.getMessage();
+                        log.info("Received from port {}: {}", mess.getFromPort(), mess);
+
+                        AckMessage ackMessage = new AckMessage(mess.getMessage(), mess.getToPort(), mess.getFromPort());
+                        AckMessageWrapper ackMessageWrapper = new AckMessageWrapper(AckMessageWrapper.MessageType.ACK_MESSAGE, ackMessage);
+
+                        out.writeObject(ackMessageWrapper);
+
+                        log.info("Sent ACK to server {}: {}", ackMessage.getFromPort(), ackMessage);
+
+                        out.flush();
                         break;
                 }
 

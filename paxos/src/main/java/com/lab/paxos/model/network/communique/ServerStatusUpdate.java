@@ -1,4 +1,4 @@
-package com.lab.paxos.model.network;
+package com.lab.paxos.model.network.communique;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

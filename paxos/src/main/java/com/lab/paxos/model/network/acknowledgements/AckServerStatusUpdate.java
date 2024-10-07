@@ -1,4 +1,4 @@
-package com.lab.paxos.model.network;
+package com.lab.paxos.model.network.acknowledgements;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

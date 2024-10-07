@@ -1,6 +1,6 @@
 package com.lab.paxos.controller;
 
-import com.lab.paxos.model.network.ServerStatusUpdate;
+import com.lab.paxos.model.network.communique.ServerStatusUpdate;
 import com.lab.paxos.service.SocketService;
 import com.lab.paxos.util.ServerStatusUtil;
 import com.lab.paxos.util.SocketMessageUtil;
