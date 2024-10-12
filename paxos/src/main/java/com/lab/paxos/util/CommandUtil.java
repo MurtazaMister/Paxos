@@ -29,11 +29,11 @@ public class CommandUtil {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             String input;
             while (true) {
-                System.out.print("""
-                        Enter commands: 
+                System.out.printf("""
+                        Enter commands for server %d: 
                         b (broadcast) <message>
                         s (send) <port> <message>
-                        """);
+                        """, assignedPort);
                 input = reader.readLine();
 
                 if (input != null) {

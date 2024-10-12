@@ -1,5 +1,6 @@
 package com.lab.paxos.controller;
 
+import com.lab.paxos.dto.ValidateUserDTO;
 import com.lab.paxos.model.UserAccount;
 import com.lab.paxos.repository.UserAccountRepository;
 import com.lab.paxos.util.ServerStatusUtil;
@@ -28,22 +29,22 @@ public class UserAccountController {
 
         log.info("getUserIdByUsername(username) called with username: {}", username);
 
-        UserAccount userAccount = userAccountRepository.findByUsername(username);
-        if(userAccount != null) {
-            return ResponseEntity.ok(userAccount.getId());
+        Optional<UserAccount> optionalUserAccount = userAccountRepository.findByUsername(username);
+        if(optionalUserAccount.isPresent()) {
+            return ResponseEntity.ok(optionalUserAccount.get().getId());
         }
         return ResponseEntity.notFound().build();
 
     }
 
     @PostMapping("/validate")
-    public ResponseEntity<Boolean> validateUser(@RequestBody UserAccount bodyUserAccount){
+    public ResponseEntity<Boolean> validateUser(@RequestBody ValidateUserDTO bodyUserAccount) {
 
         if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 
-        log.info("validateUser(userAccount) called with userId: {}", bodyUserAccount.getId());
+        log.info("validateUser(userAccount) called with userId: {}", bodyUserAccount.getUserId());
 
-        Optional<UserAccount> optionalUserAccount = userAccountRepository.findById(bodyUserAccount.getId());
+        Optional<UserAccount> optionalUserAccount = userAccountRepository.findById(bodyUserAccount.getUserId());
 
         if(optionalUserAccount.isPresent()){
 
@@ -67,7 +68,7 @@ public class UserAccountController {
         UserAccount userAccount = userAccountRepository.findById(userId).orElse(null);
 
         if(userAccount != null){
-            return ResponseEntity.ok(userAccount.getBalance());
+            return ResponseEntity.ok(userAccount.getEffectiveBalance());
         }
 
         return ResponseEntity.notFound().build();

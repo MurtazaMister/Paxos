@@ -27,6 +27,6 @@ public class TransactionBlock implements Serializable {
     private BlockStatus status;
 
     public enum BlockStatus {
-        INITIALIZED, ACCEPTED, COMMITTED
+        PENDING, ACCEPTED, COMMITTED
     }
 }

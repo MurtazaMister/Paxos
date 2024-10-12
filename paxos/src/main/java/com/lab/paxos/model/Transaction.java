@@ -1,17 +1,17 @@
 package com.lab.paxos.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
 public class Transaction {
 
     @Id
@@ -24,7 +24,7 @@ public class Transaction {
     @Column(name = "receiver_account_id", nullable = false)
     private Long receiverId;
 
-    private BigDecimal amount;
+    private Long amount;
 
     private LocalDateTime timestamp;
 
@@ -33,7 +33,7 @@ public class Transaction {
     private TransactionStatus status;
 
     public enum TransactionStatus {
-        INITIALIZED, COMMITTED
+        PENDING, COMMITTED
     }
 
 }

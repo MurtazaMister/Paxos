@@ -13,6 +13,9 @@ public class DatabaseResetService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private ExitService exitService;
+
     private String[] tables = {"transaction_block_transactions", "transaction_block", "transaction", "transaction_block_seq"};
 
     @Transactional
@@ -29,7 +32,30 @@ public class DatabaseResetService {
         // Reviving foreign key checks
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1;");
         jdbcTemplate.execute("update user_account set balance = 100 where id>0;");
+        jdbcTemplate.execute("update user_account set effective_balance = 100 where id>0;");
 
         log.warn("Transaction tables and balances reset");
+    }
+
+    @Transactional
+    public void dropDatabase() {
+
+        // Removing foreign key checks
+        jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 0;");
+
+        // Dropping all transaction tables
+        for (String table : tables) {
+            jdbcTemplate.execute("DROP TABLE " + table);
+        }
+
+        // Reviving foreign key checks
+        jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1;");
+        jdbcTemplate.execute("update user_account set balance = 100 where id>0;");
+        jdbcTemplate.execute("update user_account set effective_balance = 100 where id>0;");
+
+        log.warn("Transaction tables dropped, balances reset");
+        log.warn("Restart the server");
+        exitService.exitApplication(0);
+
     }
 }

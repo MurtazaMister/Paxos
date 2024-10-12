@@ -1,6 +1,9 @@
 package com.lab.paxos.service.client;
 
 import com.lab.paxos.config.client.ApiConfig;
+import com.lab.paxos.dto.TransactionDTO;
+import com.lab.paxos.dto.ValidateUserDTO;
+import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.UserAccount;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,13 +30,13 @@ public class ApiService {
 
     // validating a client with userId and password
     public Boolean validate(Long id, String password){
-        UserAccount ua = new UserAccount(id, password);
+        ValidateUserDTO validateUserDTO = new ValidateUserDTO(id, password);
         String url = apiConfig.getRestServerUrlWithPort()+"/user/validate";
 
         log.info("Sending req: {}", url);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<UserAccount> request = new HttpEntity<>(ua, headers);
+        HttpEntity<ValidateUserDTO> request = new HttpEntity<>(validateUserDTO, headers);
 
         try{
             ResponseEntity<Boolean> response = restTemplate.exchange(url, HttpMethod.POST, request, Boolean.class);
@@ -114,5 +117,35 @@ public class ApiService {
         catch (Exception e) {
             log.trace(e.getMessage());
         }
+    }
+
+    public Transaction transact(String sName, String rName, Long amount){
+        String url = apiConfig.getRestServerUrlWithPort()+"/transaction";
+        log.info("Sending req: {}", url);
+
+        TransactionDTO transactionDTO = TransactionDTO.builder()
+                .unameSender(sName)
+                .unameReceiver(rName)
+                .amount(amount)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<TransactionDTO> request = new HttpEntity<>(transactionDTO, headers);
+
+        try{
+            ResponseEntity<Transaction> response = restTemplate.exchange(url, HttpMethod.POST, request, Transaction.class);
+
+            if(response.getStatusCode() == HttpStatus.OK){
+                return response.getBody();
+            }
+            else if(response.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
+                log.error("{}: Service Unavailable", response.getStatusCode());
+            }
+        }
+        catch(Exception e){
+            log.trace(e.getMessage());
+        }
+        return null;
     }
 }

@@ -1,6 +1,8 @@
 package com.lab.paxos.service.client;
 
 import com.lab.paxos.config.client.ApiConfig;
+import com.lab.paxos.dto.TransactionDTO;
+import com.lab.paxos.model.Transaction;
 import com.lab.paxos.service.ExitService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ public class ClientService {
     private ValidationService validationService;
 
     private Long userId;
+    private String username;
     private ApiConfig apiConfig;
     @Autowired
     private ApiService apiService;
@@ -29,7 +32,7 @@ public class ClientService {
         try(BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))){
 
             System.out.print("username:");
-            String username = reader.readLine();
+            username = reader.readLine();
 
             userId = validationService.identifyServer(username);
 
@@ -88,7 +91,13 @@ public class ClientService {
                             System.out.println("Balance: $"+apiService.balanceCheck(userId));
                             break;
                         case "s":
-                            log.info("Under development");
+                            if(parts.length == 3 && parts[2].matches("-?\\d+")) {
+                                Transaction t = apiService.transact(username, parts[1], Long.parseLong(parts[2]));
+                                System.out.println(t);
+                            }
+                            else {
+                                log.warn("Invalid command");
+                            }
                             break;
                         case "e":
                             exitFlag = true;

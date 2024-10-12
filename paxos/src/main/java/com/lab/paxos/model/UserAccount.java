@@ -1,9 +1,6 @@
 package com.lab.paxos.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
@@ -11,16 +8,12 @@ import lombok.*;
 @Setter
 @NoArgsConstructor
 public class UserAccount {
-
-    public UserAccount(Long id, String password){
-        this.id = id;
-        this.password = password;
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(unique = true, nullable = false)
     private String username;
     private String password;
     private Long balance;
+    private Long effectiveBalance;
 }
