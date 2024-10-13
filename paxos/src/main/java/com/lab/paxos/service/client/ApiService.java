@@ -15,6 +15,8 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.LocalDateTime;
+
 @Service
 @Slf4j
 public class ApiService {
@@ -127,6 +129,7 @@ public class ApiService {
                 .unameSender(sName)
                 .unameReceiver(rName)
                 .amount(amount)
+                .timestamp(LocalDateTime.now())
                 .build();
 
         HttpHeaders headers = new HttpHeaders();

@@ -46,7 +46,7 @@ public class TransactionController {
                         .amount(transactionDTO.getAmount())
                         .senderId(sender.getId())
                         .receiverId(receiver.getId())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(transactionDTO.getTimestamp())
                         .status(Transaction.TransactionStatus.PENDING)
                         .build();
                 transaction = transactionRepository.save(transaction);

@@ -28,7 +28,7 @@ public class DataBaseConfig {
         if(developerMode && socketService.getAssignedPort()>0){
             log.warn("Resetting balances & transactions");
             databaseResetService.resetDatabase();
-            // databaseResetService.dropDatabase();
+//            databaseResetService.dropDatabase();
         }
     }
 }

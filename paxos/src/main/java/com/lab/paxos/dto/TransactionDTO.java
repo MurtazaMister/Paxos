@@ -18,6 +18,8 @@ public class TransactionDTO {
     private String unameSender;
     @NotNull
     private String unameReceiver;
+    @NotNull
+    private LocalDateTime timestamp;
     @Min(value = 1, message = "Amount should be greater than 0")
     private Long amount;
 }
