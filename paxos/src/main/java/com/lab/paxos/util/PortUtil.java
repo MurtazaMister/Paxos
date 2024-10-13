@@ -17,6 +17,10 @@ public class PortUtil {
     @Value("${server.port.pool}")
     private String portPool;
 
+    public int basePort(){
+        return Integer.parseInt(portPool.split(",")[0]);
+    }
+
     public List<Integer> portPoolGenerator(){
         log.info("PortPool: {}", portPool);
 

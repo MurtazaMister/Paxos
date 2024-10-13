@@ -31,6 +31,12 @@ public class ServerController {
     @Autowired
     private SocketMessageUtil socketMessageUtil;
 
+    @GetMapping("/test")
+    public ResponseEntity<Boolean> test() {
+        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        return ResponseEntity.ok(true);
+    }
+
     @GetMapping("/fail")
     public ResponseEntity<Boolean> failServer(@RequestParam(required = false) Integer port){
 

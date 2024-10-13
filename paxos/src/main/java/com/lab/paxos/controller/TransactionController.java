@@ -5,6 +5,8 @@ import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.UserAccount;
 import com.lab.paxos.repository.TransactionRepository;
 import com.lab.paxos.repository.UserAccountRepository;
+import com.lab.paxos.service.SocketService;
+import com.lab.paxos.util.PortUtil;
 import com.lab.paxos.util.ServerStatusUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,10 @@ public class TransactionController {
     private UserAccountRepository userAccountRepository;
     @Autowired
     private TransactionRepository transactionRepository;
+    @Autowired
+    private SocketService socketService;
+    @Autowired
+    private PortUtil portUtil;
 
     @PostMapping
     @Transactional
@@ -42,17 +48,26 @@ public class TransactionController {
             UserAccount receiver = optionalReceiver.get();
 
             if(sender.getEffectiveBalance() >= transactionDTO.getAmount()){
+
                 Transaction transaction = Transaction.builder()
                         .amount(transactionDTO.getAmount())
                         .senderId(sender.getId())
                         .receiverId(receiver.getId())
                         .timestamp(transactionDTO.getTimestamp())
-                        .status(Transaction.TransactionStatus.PENDING)
                         .build();
+
+                if(socketService.getAssignedPort()- portUtil.basePort()+1 == sender.getId()){
+                    transaction.setStatus(Transaction.TransactionStatus.PENDING);
+                    sender.setEffectiveBalance(sender.getEffectiveBalance() - transactionDTO.getAmount());
+                    userAccountRepository.save(sender);
+                    log.info("Performed transaction ${} : {} -> {}", transactionDTO.getAmount(), sender.getUsername(), receiver.getUsername());
+                }
+                else{
+                    transaction.setStatus(Transaction.TransactionStatus.UNINITIALIZED);
+                    log.info("Queued uninitialized transaction ${} : {} -> {}, sender unaffected", transactionDTO.getAmount(), sender.getUsername(), receiver.getUsername());
+                }
+
                 transaction = transactionRepository.save(transaction);
-                sender.setEffectiveBalance(sender.getEffectiveBalance() - transactionDTO.getAmount());
-                userAccountRepository.save(sender);
-                log.info("Performed transaction ${} : {} -> {}", transactionDTO.getAmount(), sender.getUsername(), receiver.getUsername());
                 return ResponseEntity.ok(transaction);
             }
             else{

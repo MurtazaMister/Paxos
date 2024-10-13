@@ -5,17 +5,20 @@ import com.lab.paxos.dto.TransactionDTO;
 import com.lab.paxos.dto.ValidateUserDTO;
 import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.UserAccount;
+import com.lab.paxos.util.PortUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -29,6 +32,9 @@ public class ApiService {
 
     @Autowired
     private ApiConfig apiConfig;
+
+    @Autowired
+    private PortUtil portUtil;
 
     // validating a client with userId and password
     public Boolean validate(Long id, String password){
@@ -46,12 +52,20 @@ public class ApiService {
             if(response.getStatusCode() == HttpStatus.OK){
                 return response.getBody();
             }
-            else if(response.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
-                log.error("{}: Service Unavailable", response.getStatusCode());
-                return false;
+//            else if(response.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
+//                log.error("{}: Service Unavailable", response.getStatusCode());
+//                return false;
+//            }
+        } catch (HttpServerErrorException e) {
+            if(e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
+                log.error("Service unavailable : {}", e.getMessage());
+            } else {
+                log.error("Server error: {}", e.getMessage());
             }
+        } catch (HttpClientErrorException e) {
+            log.error("Client error: {}", e.getMessage());
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("Other error: {}", e.getMessage());
         }
         return false;
     }
@@ -68,6 +82,13 @@ public class ApiService {
                     .queryParam("userId", id)
                     .toUriString(), Long.class);
             return Long.parseLong(Long.toString(balance));
+        }
+        catch (HttpServerErrorException e) {
+            if(e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
+                log.error("Service unavailable : {}", e.getMessage());
+            } else {
+                log.error("Server error: {}", e.getMessage());
+            }
         }
         catch (HttpClientErrorException e) {
             log.error("Http error while fetching balance: {}", e.getStatusCode());
@@ -94,11 +115,18 @@ public class ApiService {
 
             log.info("Server at port {}'s status = {}", (port!=null)?port:(apiConfig.getApiPort()-Integer.parseInt(offset)), (failed)?"failed":"up & running");
         }
+        catch (HttpServerErrorException e) {
+            if(e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
+                log.error("Service unavailable : {}", e.getMessage());
+            } else {
+                log.error("Server error: {}", e.getMessage());
+            }
+        }
         catch (HttpClientErrorException e){
-            log.trace(e.getMessage());
+            log.error(e.getMessage());
         }
         catch (Exception e) {
-            log.trace(e.getMessage());
+            log.error(e.getMessage());
         }
     }
 
@@ -113,11 +141,18 @@ public class ApiService {
 
             log.info("Server at port {}'s status = {}", (port!=null)?port:(apiConfig.getApiPort()-Integer.parseInt(offset)), (!resumed)?"failed":"up & running");
         }
+        catch (HttpServerErrorException e) {
+            if(e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
+                log.error("Service unavailable : {}", e.getMessage());
+            } else {
+                log.error("Server error: {}", e.getMessage());
+            }
+        }
         catch (HttpClientErrorException e){
-            log.trace(e.getMessage());
+            log.error(e.getMessage());
         }
         catch (Exception e) {
-            log.trace(e.getMessage());
+            log.error(e.getMessage());
         }
     }
 
@@ -142,9 +177,41 @@ public class ApiService {
             if(response.getStatusCode() == HttpStatus.OK){
                 return response.getBody();
             }
-            else if(response.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
-                log.error("{}: Service Unavailable", response.getStatusCode());
+        }
+        catch (HttpServerErrorException e) {
+            if(e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
+                log.error("Service unavailable : {}", e.getMessage());
+                log.info("Broadcasting transaction to exactly 1 alive server");
+
+                List<Integer> portsArray = portUtil.portPoolGenerator();
+
+                for(int port : portsArray) {
+                    if(port == apiConfig.getApiPort()) continue;
+                    url = apiConfig.getRestServerUrl() + ":" + (port + Integer.parseInt(offset)) + "/transaction";
+                    log.info("Sending req: {}", url);
+
+                    try {
+                        ResponseEntity<Transaction> response = restTemplate.exchange(url, HttpMethod.POST, request, Transaction.class);
+
+                        if (response.getStatusCode() == HttpStatus.OK) {
+                            return response.getBody();
+                        }
+                    } catch (HttpServerErrorException ex) {
+                        if (e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE) {
+                            {
+                                log.error("Service unavailable {} : {}", port, e.getMessage());
+                            }
+                        }
+                    } catch (Exception ex) {
+                        log.error("Server error: {}", ex.getMessage());
+                    }
+                }
+            } else {
+                log.error("Server error: {}", e.getMessage());
             }
+        }
+        catch (HttpClientErrorException e){
+            log.error(e.getMessage());
         }
         catch(Exception e){
             log.trace(e.getMessage());

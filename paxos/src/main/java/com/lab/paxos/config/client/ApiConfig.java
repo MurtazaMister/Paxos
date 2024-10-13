@@ -12,6 +12,9 @@ public class ApiConfig {
 
     private Integer apiPort = -1;
 
+    @Value("${server.port.pool}")
+    private String portPool;
+
     @Value("${rest.server.url}")
     private String restServerUrl;
 

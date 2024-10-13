@@ -37,7 +37,7 @@ public class ClientService {
             userId = validationService.identifyServer(username);
 
             if(userId == -1){
-                log.error("Invalid username");
+                log.error("Invalid username or server error");
                 exitService.exitApplication(0);
                 return;
             }
