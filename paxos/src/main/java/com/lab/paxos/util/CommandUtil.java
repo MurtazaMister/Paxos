@@ -20,7 +20,7 @@ public class CommandUtil {
     @Autowired
     private ServerStatusUtil serverStatusUtil;
 
-    public void listenForCommands(List<Integer> PORT_POOL, int assignedPort) {
+    public void listenForCommands(int assignedPort) {
         try {
             if(serverStatusUtil.isFailed()){
                 log.error("Rejecting incoming command, current server down");
@@ -50,10 +50,10 @@ public class CommandUtil {
                                         .message(message)
                                         .fromPort(assignedPort)
                                         .build();
-                                socketMessageUtil.broadcast(PORT_POOL, assignedPort, socketMessageWrapper);
+                                socketMessageUtil.broadcast(socketMessageWrapper);
                             }
                             catch(IOException e){
-                                log.error("Server unavailable");
+                                log.error("IOException {}", e.getMessage());
                             }
                             catch (Exception e){
                                 log.error(e.getMessage());

@@ -70,7 +70,7 @@ public class SocketService {
             log.info("Socket open for incoming connections and commands");
 
             // A thread to listen for commands on the terminal
-            new Thread(() -> commandUtil.listenForCommands(PORT_POOL, assignedPort)).start();
+            new Thread(() -> commandUtil.listenForCommands(assignedPort)).start();
 
             // A thread to listen for incoming messages
             socketMessageUtil.listenForIncomingMessages(serverSocket);

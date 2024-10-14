@@ -1,6 +1,6 @@
 package com.lab.paxos.networkObjects.communique;
 
-import com.lab.paxos.util.PaxosUtil;
+import com.lab.paxos.service.PaxosService;
 import lombok.*;
 
 import java.io.Serializable;
@@ -14,5 +14,5 @@ public class Prepare implements Serializable {
 
     private int ballotNumber;
 
-    private PaxosUtil.Purpose purpose;
+    private PaxosService.Purpose purpose;
 }

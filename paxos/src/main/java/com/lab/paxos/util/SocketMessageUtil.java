@@ -1,5 +1,6 @@
 package com.lab.paxos.util;
 
+import com.lab.paxos.config.SocketConfig;
 import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
 import com.lab.paxos.networkObjects.acknowledgements.AckServerStatusUpdate;
 import com.lab.paxos.networkObjects.communique.Message;
@@ -14,8 +15,10 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.List;
 
 @Component
@@ -29,6 +32,12 @@ public class SocketMessageUtil {
     ServerStatusUtil serverStatusUtil;
 
     @Autowired
+    PortUtil portUtil;
+
+    @Autowired
+    SocketConfig socketConfig;
+
+    @Autowired
     @Lazy
     SocketService socketService;
 
@@ -39,37 +48,64 @@ public class SocketMessageUtil {
         }
 
         AckMessageWrapper ackMessageWrapper = null;
-        try(Socket socket = new Socket("localhost", targetPort);
+        try(Socket socket = new Socket()){
+
+            // setting connection timeout
+            socket.connect(new InetSocketAddress("localhost", targetPort), socketConfig.getConnectionTimeout());
+            // setting timeout for receiving ack
+            socket.setSoTimeout(socketConfig.getReadTimeout());
+
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream in = new ObjectInputStream(socket.getInputStream())){
+            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+
 
             out.writeObject(message);
             out.flush();
 
-            // Receiving acknowledgement from the respective server
-            ackMessageWrapper = (AckMessageWrapper) in.readObject();
-            ackDisplayUtil.displayAcknowledgement(ackMessageWrapper);
+            try{
+                // Receiving acknowledgement from the respective server
+                ackMessageWrapper = (AckMessageWrapper) in.readObject();
+                ackDisplayUtil.displayAcknowledgement(ackMessageWrapper);
+            } catch (SocketTimeoutException e) {
+                log.error("Timeout after {} ms waiting for port {}", socketConfig.getReadTimeout(), targetPort);
+            } catch (EOFException e) {
+                log.error("Connection closed by the server without sending ack for port {}: {}", targetPort, e.toString());
+            } catch (IOException e) {
+                log.error("IO Error receiving ack message from port {}: {}", targetPort, e.toString());
+            } catch (Exception e) {
+                log.error("Unexpected error receiving ack message from port {}: {}", targetPort, e.toString());
+            }
 
         }
-        catch (IOException | ClassNotFoundException e){
-            log.trace("Failed to send message to port {}: {}", targetPort, e.getMessage());
+        catch (IOException e){
+            log.error("Failed to send message to port {}: {}", targetPort, e.getMessage());
+        } catch (Exception e) {
+            log.error("Exception: {}", e.getMessage());
         }
 
         return ackMessageWrapper;
     }
 
-    public void broadcast(List<Integer> PORT_POOL, int assignedPort, SocketMessageWrapper socketMessageWrapper) throws IOException {
+    public int broadcast(SocketMessageWrapper socketMessageWrapper) throws IOException {
 
         if(serverStatusUtil.isFailed()){
             throw new IOException("Server Unavailable");
         }
 
+        List<Integer> PORT_POOL = portUtil.portPoolGenerator();
+        int assignedPort = socketService.getAssignedPort();
+
+        int count = 0;
+
         for (int port : PORT_POOL) {
             if (port != assignedPort) {
                 socketMessageWrapper.setToPort(port);
-                sendMessageToServer(port, socketMessageWrapper);
+                AckMessageWrapper ackMessageWrapper = sendMessageToServer(port, socketMessageWrapper);
+                if(ackMessageWrapper != null) count++;
             }
         }
+
+        return count;
     }
 
     public void listenForIncomingMessages(@NotNull ServerSocket serverSocket) {
@@ -96,7 +132,7 @@ public class SocketMessageUtil {
                 if(serverStatusUtil.isFailed()){
                     if(!(message.getType() == SocketMessageWrapper.MessageType.SERVER_STATUS_UPDATE && !message.getServerStatusUpdate().isFailServer())){
                         log.error("Rejecting incoming message, current server down");
-                        incoming.close();
+//                        incoming.close();
                         return;
                     }
                 }

@@ -1,6 +1,7 @@
 package com.lab.paxos.wrapper;
 
 import com.lab.paxos.networkObjects.communique.Message;
+import com.lab.paxos.networkObjects.communique.Prepare;
 import com.lab.paxos.networkObjects.communique.ServerStatusUpdate;
 import lombok.*;
 
@@ -27,4 +28,5 @@ public class SocketMessageWrapper implements Serializable {
 
     private ServerStatusUpdate serverStatusUpdate;
     private Message message;
+    private Prepare prepare;
 }
