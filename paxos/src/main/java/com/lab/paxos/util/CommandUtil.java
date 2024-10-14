@@ -42,7 +42,15 @@ public class CommandUtil {
                     switch (parts[0]) {
                         case "b":
                             try{
-                                socketMessageUtil.broadcast(PORT_POOL, assignedPort, parts[1]);
+                                Message message = Message.builder()
+                                        .message(parts[1])
+                                        .build();
+                                SocketMessageWrapper socketMessageWrapper = SocketMessageWrapper.builder()
+                                        .type(SocketMessageWrapper.MessageType.MESSAGE)
+                                        .message(message)
+                                        .fromPort(assignedPort)
+                                        .build();
+                                socketMessageUtil.broadcast(PORT_POOL, assignedPort, socketMessageWrapper);
                             }
                             catch(IOException e){
                                 log.error("Server unavailable");
@@ -55,9 +63,19 @@ public class CommandUtil {
                             int targetPort = -1;
                             try {
                                 targetPort = Integer.parseInt(parts[1]);
-                                Message message = new Message(parts[2], assignedPort, targetPort);
-                                SocketMessageWrapper socketMessageWrapper = new SocketMessageWrapper(SocketMessageWrapper.MessageType.MESSAGE, message);
+                                Message message = Message.builder()
+                                        .message(parts[2])
+                                        .build();
+
+                                SocketMessageWrapper socketMessageWrapper = SocketMessageWrapper.builder()
+                                        .type(SocketMessageWrapper.MessageType.MESSAGE)
+                                        .message(message)
+                                        .fromPort(assignedPort)
+                                        .toPort(targetPort)
+                                        .build();
+
                                 socketMessageUtil.sendMessageToServer(targetPort, socketMessageWrapper);
+
                             } catch (NumberFormatException e) {
                                 log.warn("Invalid port number: {}", targetPort);
                             }

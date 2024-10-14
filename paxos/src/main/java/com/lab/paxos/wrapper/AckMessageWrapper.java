@@ -2,11 +2,15 @@ package com.lab.paxos.wrapper;
 
 import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
 import com.lab.paxos.networkObjects.acknowledgements.AckServerStatusUpdate;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 
 @Getter
+@Builder
+@Setter
 public class AckMessageWrapper implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -21,13 +25,6 @@ public class AckMessageWrapper implements Serializable {
     private AckServerStatusUpdate ackServerStatusUpdate;
     private AckMessage ackMessage;
 
-    public AckMessageWrapper(MessageType type, AckServerStatusUpdate ackServerStatusUpdate) {
-        this.type = type;
-        this.ackServerStatusUpdate = ackServerStatusUpdate;
-    }
-
-    public AckMessageWrapper(MessageType type, AckMessage ackMessage) {
-        this.type = type;
-        this.ackMessage = ackMessage;
-    }
+    private int fromPort;
+    private int toPort;
 }

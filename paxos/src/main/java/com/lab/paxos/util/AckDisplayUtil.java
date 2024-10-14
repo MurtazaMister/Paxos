@@ -11,11 +11,11 @@ public class AckDisplayUtil {
         switch (ackMessageWrapper.getType()){
 
             case ACK_SERVER_STATUS_UPDATE:
-                log.info("Received ACK from server {}: {}", ackMessageWrapper.getAckServerStatusUpdate().getFromPort(), ackMessageWrapper.getAckServerStatusUpdate());
+                log.info("Received ACK from server {}: {}", ackMessageWrapper.getFromPort(), ackMessageWrapper.getAckServerStatusUpdate());
                 break;
 
             case ACK_MESSAGE:
-                log.info("Received ACK from server {}: {}", ackMessageWrapper.getAckMessage().getFromPort(), ackMessageWrapper.getAckMessage());
+                log.info("Received ACK from server {}: {}", ackMessageWrapper.getFromPort(), ackMessageWrapper.getAckMessage());
                 break;
 
             case PROMISE:

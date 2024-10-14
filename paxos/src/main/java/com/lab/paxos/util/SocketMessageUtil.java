@@ -32,14 +32,14 @@ public class SocketMessageUtil {
     @Lazy
     SocketService socketService;
 
-    public AckMessageWrapper sendMessageToServer(int port, SocketMessageWrapper message) throws IOException {
+    public AckMessageWrapper sendMessageToServer(int targetPort, SocketMessageWrapper message) throws IOException {
 
         if(serverStatusUtil.isFailed()){
             throw new IOException("Server Unavailable");
         }
 
         AckMessageWrapper ackMessageWrapper = null;
-        try(Socket socket = new Socket("localhost", port);
+        try(Socket socket = new Socket("localhost", targetPort);
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream in = new ObjectInputStream(socket.getInputStream())){
 
@@ -52,13 +52,13 @@ public class SocketMessageUtil {
 
         }
         catch (IOException | ClassNotFoundException e){
-            log.trace("Failed to send message to port {}: {}", port, e.getMessage());
+            log.trace("Failed to send message to port {}: {}", targetPort, e.getMessage());
         }
 
         return ackMessageWrapper;
     }
 
-    public void broadcast(List<Integer> PORT_POOL, int assignedPort, String message) throws IOException {
+    public void broadcast(List<Integer> PORT_POOL, int assignedPort, SocketMessageWrapper socketMessageWrapper) throws IOException {
 
         if(serverStatusUtil.isFailed()){
             throw new IOException("Server Unavailable");
@@ -66,9 +66,8 @@ public class SocketMessageUtil {
 
         for (int port : PORT_POOL) {
             if (port != assignedPort) {
-                Message mess = new Message(message, assignedPort, port);
-                SocketMessageWrapper smw = new SocketMessageWrapper(SocketMessageWrapper.MessageType.MESSAGE, mess);
-                sendMessageToServer(port, smw);
+                socketMessageWrapper.setToPort(port);
+                sendMessageToServer(port, socketMessageWrapper);
             }
         }
     }
@@ -105,31 +104,67 @@ public class SocketMessageUtil {
                 switch (message.getType()){
                     case SERVER_STATUS_UPDATE:
                         ServerStatusUpdate serverStatusUpdate = message.getServerStatusUpdate();
-                        if(serverStatusUpdate.getToPort() == socketService.getAssignedPort()){
-                            log.info("Received from port {}: {}", serverStatusUpdate.getFromPort(), serverStatusUpdate);
+                        if(message.getToPort() == socketService.getAssignedPort()){
+                            log.info("Received from port {}: {}", message.getFromPort(), serverStatusUpdate);
 
                             serverStatusUtil.setFailed(serverStatusUpdate.isFailServer());
 
-                            AckServerStatusUpdate ackServerStatusUpdate = new AckServerStatusUpdate(serverStatusUtil.isFailed(), socketService.getAssignedPort(), serverStatusUpdate.getFromPort());
-                            AckMessageWrapper ackMessageWrapper = new AckMessageWrapper(AckMessageWrapper.MessageType.ACK_SERVER_STATUS_UPDATE, ackServerStatusUpdate);
+                            AckServerStatusUpdate ackServerStatusUpdate = AckServerStatusUpdate.builder()
+                                    .serverFailed(serverStatusUtil.isFailed())
+                                    .build();
+
+                            AckMessageWrapper ackMessageWrapper = AckMessageWrapper.builder()
+                                    .type(AckMessageWrapper.MessageType.ACK_SERVER_STATUS_UPDATE)
+                                    .ackServerStatusUpdate(ackServerStatusUpdate)
+                                    .fromPort(socketService.getAssignedPort())
+                                    .toPort(message.getFromPort())
+                                    .build();
 
                             out.writeObject(ackMessageWrapper);
 
-                            log.info("Sent ACK to server {}: {}", ackServerStatusUpdate.getToPort(), ackMessageWrapper.getAckServerStatusUpdate());
+                            log.info("Sent ACK to server {}: {}", ackMessageWrapper.getToPort(), ackMessageWrapper.getAckServerStatusUpdate());
+
+                            out.flush();
+                        }
+                        else{
+                            log.info("Target port does not match port of current server");
+
+                            AckServerStatusUpdate ackServerStatusUpdate = AckServerStatusUpdate.builder()
+                                    .serverFailed(serverStatusUtil.isFailed())
+                                    .build();
+
+                            AckMessageWrapper ackMessageWrapper = AckMessageWrapper.builder()
+                                    .type(AckMessageWrapper.MessageType.ACK_SERVER_STATUS_UPDATE)
+                                    .ackServerStatusUpdate(ackServerStatusUpdate)
+                                    .fromPort(socketService.getAssignedPort())
+                                    .toPort(message.getFromPort())
+                                    .build();
+
+                            out.writeObject(ackMessageWrapper);
+
+                            log.info("Sent ACK to server {}: {}", ackMessageWrapper.getToPort(), ackMessageWrapper.getAckServerStatusUpdate());
 
                             out.flush();
                         }
                         break;
                     case MESSAGE:
                         Message mess = message.getMessage();
-                        log.info("Received from port {}: {}", mess.getFromPort(), mess);
+                        log.info("Received from port {}: {}", message.getFromPort(), mess);
 
-                        AckMessage ackMessage = new AckMessage(mess.getMessage(), mess.getToPort(), mess.getFromPort());
-                        AckMessageWrapper ackMessageWrapper = new AckMessageWrapper(AckMessageWrapper.MessageType.ACK_MESSAGE, ackMessage);
+                        AckMessage ackMessage = AckMessage.builder()
+                                .message(mess.getMessage())
+                                .build();
+
+                        AckMessageWrapper ackMessageWrapper = AckMessageWrapper.builder()
+                                .type(AckMessageWrapper.MessageType.ACK_MESSAGE)
+                                .ackMessage(ackMessage)
+                                .fromPort(message.getToPort())
+                                .toPort(message.getFromPort())
+                                .build();
 
                         out.writeObject(ackMessageWrapper);
 
-                        log.info("Sent ACK to server {}: {}", ackMessage.getFromPort(), ackMessage);
+                        log.info("Sent ACK to server {}: {}", ackMessageWrapper.getToPort(), ackMessage);
 
                         out.flush();
                         break;

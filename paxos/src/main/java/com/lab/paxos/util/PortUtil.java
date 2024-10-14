@@ -17,14 +17,19 @@ public class PortUtil {
     @Value("${server.port.pool}")
     private String portPool;
 
+    List<Integer> PORT_POOL = null;
+
     public int basePort(){
         return Integer.parseInt(portPool.split(",")[0]);
     }
 
     public List<Integer> portPoolGenerator(){
+
+        if(PORT_POOL != null) return PORT_POOL;
+
         log.info("PortPool: {}", portPool);
 
-        List<Integer> PORT_POOL = new ArrayList<>();
+        PORT_POOL = new ArrayList<>();
 
         Arrays.stream(portPool.split(","))
                 .map(String::trim)  // Trim whitespace

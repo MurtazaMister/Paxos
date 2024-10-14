@@ -3,6 +3,7 @@ package com.lab.paxos.networkObjects.acknowledgements;
 import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.TransactionBlock;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,6 +13,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class Promise implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -24,7 +26,4 @@ public class Promise implements Serializable {
     private Integer acceptNum;
 
     private TransactionBlock previousTransactionBlock;
-
-    private int fromPort;
-    private int toPort;
 }

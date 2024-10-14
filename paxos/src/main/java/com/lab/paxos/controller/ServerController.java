@@ -49,11 +49,19 @@ public class ServerController {
         }
         else{
             try{
-                ServerStatusUpdate serverStatusUpdate = new ServerStatusUpdate(true, port, socketService.getAssignedPort());
-                SocketMessageWrapper socketMessageWrapper = new SocketMessageWrapper(SocketMessageWrapper.MessageType.SERVER_STATUS_UPDATE, serverStatusUpdate);
+                log.info("Sending fail message to server {}", port);
+                ServerStatusUpdate serverStatusUpdate = ServerStatusUpdate.builder()
+                        .failServer(true)
+                        .build();
+
+                SocketMessageWrapper socketMessageWrapper = SocketMessageWrapper.builder()
+                        .type(SocketMessageWrapper.MessageType.SERVER_STATUS_UPDATE)
+                        .serverStatusUpdate(serverStatusUpdate)
+                        .fromPort(socketService.getAssignedPort())
+                        .toPort(port)
+                        .build();
 
                 AckMessageWrapper ackMessageWrapper = socketMessageUtil.sendMessageToServer(port, socketMessageWrapper);
-                log.info("Sending fail message to server {}", port);
                 return ResponseEntity.ok(ackMessageWrapper.getAckServerStatusUpdate().isServerFailed());
             } catch (IOException e) {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
@@ -73,8 +81,16 @@ public class ServerController {
             if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 
             try{
-                ServerStatusUpdate serverStatusUpdate = new ServerStatusUpdate(false, port, socketService.getAssignedPort());
-                SocketMessageWrapper socketMessageWrapper = new SocketMessageWrapper(SocketMessageWrapper.MessageType.SERVER_STATUS_UPDATE, serverStatusUpdate);
+                ServerStatusUpdate serverStatusUpdate = ServerStatusUpdate.builder()
+                        .failServer(false)
+                        .build();
+
+                SocketMessageWrapper socketMessageWrapper = SocketMessageWrapper.builder()
+                        .type(SocketMessageWrapper.MessageType.SERVER_STATUS_UPDATE)
+                        .serverStatusUpdate(serverStatusUpdate)
+                        .fromPort(socketService.getAssignedPort())
+                        .toPort(port)
+                        .build();
 
                 AckMessageWrapper ackMessageWrapper = socketMessageUtil.sendMessageToServer(port, socketMessageWrapper);
                 log.info("Sending resume message to server {}", port);

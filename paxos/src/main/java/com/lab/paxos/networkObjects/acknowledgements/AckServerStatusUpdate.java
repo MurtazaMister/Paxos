@@ -7,10 +7,9 @@ import java.io.Serializable;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class AckServerStatusUpdate implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private boolean serverFailed;
-    private int fromPort;
-    private int toPort;
 }
