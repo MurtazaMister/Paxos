@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @Component
 @Slf4j
@@ -50,7 +51,13 @@ public class CommandUtil {
                                         .message(message)
                                         .fromPort(assignedPort)
                                         .build();
-                                socketMessageUtil.broadcast(socketMessageWrapper);
+                                try{
+                                    int acks = socketMessageUtil.broadcast(socketMessageWrapper).get();
+                                    log.info("Received acknowledgements from {} servers", acks);
+                                }
+                                catch(InterruptedException | ExecutionException e){
+                                    log.error("Error while broadcasting messages: {}", e.getMessage());
+                                }
                             }
                             catch(IOException e){
                                 log.error("IOException {}", e.getMessage());

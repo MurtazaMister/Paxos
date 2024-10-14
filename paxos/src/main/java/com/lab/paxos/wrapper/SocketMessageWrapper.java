@@ -11,6 +11,18 @@ import java.io.Serializable;
 @Builder
 @Setter
 public class SocketMessageWrapper implements Serializable {
+
+    public static SocketMessageWrapper from(SocketMessageWrapper socketMessageWrapper){
+        return SocketMessageWrapper.builder()
+                .type(socketMessageWrapper.getType())
+                .fromPort(socketMessageWrapper.getFromPort())
+                .toPort(socketMessageWrapper.getToPort())
+                .message(socketMessageWrapper.getMessage())
+                .serverStatusUpdate(socketMessageWrapper.getServerStatusUpdate())
+                .prepare(socketMessageWrapper.getPrepare())
+                .build();
+    }
+
     private static final long serialVersionUID = 1L;
 
     public enum MessageType {

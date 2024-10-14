@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 @Service
 @Slf4j
@@ -46,7 +47,13 @@ public class PaxosService {
                     .fromPort(socketService.getAssignedPort())
                     .build();
 
-            int acks = socketMessageUtil.broadcast(socketMessageWrapper);
+            try{
+                int acks = socketMessageUtil.broadcast(socketMessageWrapper).get();
+                log.info("Received acknowledgements from {} servers", acks);
+            }
+            catch(InterruptedException | ExecutionException e){
+                log.error("Error while broadcasting messages: {}", e.getMessage());
+            }
         }
         catch(IOException e){
             log.error("IOException {}", e.getMessage());

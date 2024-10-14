@@ -20,6 +20,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -86,31 +88,40 @@ public class SocketMessageUtil {
         return ackMessageWrapper;
     }
 
-    public int broadcast(SocketMessageWrapper socketMessageWrapper) throws IOException {
+    public CompletableFuture<Integer> broadcast(SocketMessageWrapper socketMessageWrapper) throws IOException {
 
         if(serverStatusUtil.isFailed()){
-            throw new IOException("Server Unavailable");
+            return CompletableFuture.failedFuture(new IOException("Server Unavailable"));
         }
 
         List<Integer> PORT_POOL = portUtil.portPoolGenerator();
         int assignedPort = socketService.getAssignedPort();
 
-        int count = 0;
+        List<CompletableFuture<Boolean>> futures = PORT_POOL.stream()
+                .filter(port -> port != assignedPort)
+                .map(port -> CompletableFuture.supplyAsync(() -> {
+                    try{
+                        SocketMessageWrapper smw = SocketMessageWrapper.from(socketMessageWrapper);
+                        smw.setToPort(port);
+                        AckMessageWrapper ackMessageWrapper = sendMessageToServer(port, smw);
+                        return ackMessageWrapper!=null;
+                    }
+                    catch(IOException e){
+                        log.error("IOException {}: {}", port, e.getMessage());
+                        return false;
+                    }
+                    catch(Exception e){
+                        log.error("Failed to send message to port {}: {}", port, e.getMessage());
+                        return false;
+                    }
+                }))
+                .collect(Collectors.toList());
 
-        for (int port : PORT_POOL) {
-            if (port != assignedPort) {
-                socketMessageWrapper.setToPort(port);
-                try{
-                    AckMessageWrapper ackMessageWrapper = sendMessageToServer(port, socketMessageWrapper);
-                    count++;
-                }
-                catch(IOException e){
-                    log.error("IOException {}: {}", port, e.getMessage());
-                }
-            }
-        }
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> (int) futures.stream()
+                .filter(CompletableFuture::join)
+                .count());
 
-        return count;
     }
 
     public void listenForIncomingMessages(@NotNull ServerSocket serverSocket) {
