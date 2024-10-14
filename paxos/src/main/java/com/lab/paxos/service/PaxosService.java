@@ -1,25 +1,30 @@
 package com.lab.paxos.service;
 
+import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
 import com.lab.paxos.networkObjects.communique.Message;
 import com.lab.paxos.networkObjects.communique.Prepare;
+import com.lab.paxos.util.PaxosUtil.Promise;
 import com.lab.paxos.util.PortUtil;
 import com.lab.paxos.util.SocketMessageUtil;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 @Service
 @Slf4j
+@Getter
+@Setter
 public class PaxosService {
-
-    @Autowired
-    SocketMessageUtil socketMessageUtil;
 
     public enum Purpose{
         SYNC,
@@ -27,42 +32,19 @@ public class PaxosService {
     }
 
     @Autowired
-    private SocketService socketService;
+    com.lab.paxos.util.PaxosUtil.Prepare prepare;
 
     @Autowired
-    private PortUtil portUtil;
+    Promise promise;
 
     private int ballotNumber = 0;
 
-    public void prepare(Purpose purpose){
-        log.info("Paxos initiated on port {}", socketService.getAssignedPort());
-        try{
-            Prepare prepare = Prepare.builder()
-                    .ballotNumber(++ballotNumber)
-                    .purpose(purpose)
-                    .build();
+    public void prepare(int assignedPort, Purpose purpose){
+        prepare.prepare(assignedPort, purpose);
+    }
 
-            SocketMessageWrapper socketMessageWrapper = SocketMessageWrapper.builder()
-                    .type(SocketMessageWrapper.MessageType.PREPARE)
-                    .prepare(prepare)
-                    .fromPort(socketService.getAssignedPort())
-                    .build();
-
-            try{
-                List<AckMessageWrapper> ackMessageWrapperList = socketMessageUtil.broadcast(socketMessageWrapper).get();
-                log.info("Received acknowledgements from {} servers\n{}", ackMessageWrapperList.size(), ackMessageWrapperList);
-            }
-            catch(InterruptedException | ExecutionException e){
-                log.error("Error while broadcasting messages: {}", e.getMessage());
-            }
-        }
-        catch(IOException e){
-            log.error("IOException {}", e.getMessage());
-        }
-        catch (Exception e){
-            log.error(e.getMessage());
-        }
-
+    public void promise(ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
+        promise.promise(in, out, socketMessageWrapper);
     }
 
     public void accept(Purpose purpose){

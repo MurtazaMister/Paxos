@@ -5,6 +5,7 @@ import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
 import com.lab.paxos.networkObjects.acknowledgements.AckServerStatusUpdate;
 import com.lab.paxos.networkObjects.communique.Message;
 import com.lab.paxos.networkObjects.communique.ServerStatusUpdate;
+import com.lab.paxos.service.PaxosService;
 import com.lab.paxos.service.SocketService;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
@@ -38,6 +39,9 @@ public class SocketMessageUtil {
 
     @Autowired
     SocketConfig socketConfig;
+
+    @Autowired
+    PaxosService paxosService;
 
     @Autowired
     @Lazy
@@ -220,6 +224,10 @@ public class SocketMessageUtil {
                         log.info("Sent ACK to server {}: {}", ackMessageWrapper.getToPort(), ackMessage);
 
                         out.flush();
+                        break;
+
+                    case PREPARE:
+                        paxosService.promise(in, out, message);
                         break;
                 }
 

@@ -5,6 +5,7 @@ import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.UserAccount;
 import com.lab.paxos.repository.TransactionRepository;
 import com.lab.paxos.repository.UserAccountRepository;
+import com.lab.paxos.service.PaxosService;
 import com.lab.paxos.service.SocketService;
 import com.lab.paxos.util.PortUtil;
 import com.lab.paxos.util.ServerStatusUtil;
@@ -33,6 +34,8 @@ public class TransactionController {
     private SocketService socketService;
     @Autowired
     private PortUtil portUtil;
+    @Autowired
+    private PaxosService paxosService;
 
     @PostMapping
     @Transactional
@@ -73,6 +76,12 @@ public class TransactionController {
                 return ResponseEntity.ok(transaction);
             }
             else{
+                log.info("Calling paxos service");
+
+                paxosService.prepare(socketService.getAssignedPort(), PaxosService.Purpose.AGGREGATE);
+
+                log.info("End");
+
                 log.info("Feature under progress");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
             }
