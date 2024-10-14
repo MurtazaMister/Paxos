@@ -1,6 +1,7 @@
 package com.lab.paxos.util;
 
 import com.lab.paxos.networkObjects.communique.Message;
+import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,8 +53,8 @@ public class CommandUtil {
                                         .fromPort(assignedPort)
                                         .build();
                                 try{
-                                    int acks = socketMessageUtil.broadcast(socketMessageWrapper).get();
-                                    log.info("Received acknowledgements from {} servers", acks);
+                                    List<AckMessageWrapper> ackMessageWrapperList = socketMessageUtil.broadcast(socketMessageWrapper).get();
+                                    log.info("Received acknowledgements from {} servers", ackMessageWrapperList.size());
                                 }
                                 catch(InterruptedException | ExecutionException e){
                                     log.error("Error while broadcasting messages: {}", e.getMessage());

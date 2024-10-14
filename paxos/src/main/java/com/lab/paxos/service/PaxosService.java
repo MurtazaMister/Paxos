@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 @Service
@@ -34,7 +35,7 @@ public class PaxosService {
     private int ballotNumber = 0;
 
     public void prepare(Purpose purpose){
-
+        log.info("Paxos initiated on port {}", socketService.getAssignedPort());
         try{
             Prepare prepare = Prepare.builder()
                     .ballotNumber(++ballotNumber)
@@ -48,8 +49,8 @@ public class PaxosService {
                     .build();
 
             try{
-                int acks = socketMessageUtil.broadcast(socketMessageWrapper).get();
-                log.info("Received acknowledgements from {} servers", acks);
+                List<AckMessageWrapper> ackMessageWrapperList = socketMessageUtil.broadcast(socketMessageWrapper).get();
+                log.info("Received acknowledgements from {} servers\n{}", ackMessageWrapperList.size(), ackMessageWrapperList);
             }
             catch(InterruptedException | ExecutionException e){
                 log.error("Error while broadcasting messages: {}", e.getMessage());

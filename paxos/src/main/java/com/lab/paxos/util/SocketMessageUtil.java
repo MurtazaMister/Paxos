@@ -88,7 +88,7 @@ public class SocketMessageUtil {
         return ackMessageWrapper;
     }
 
-    public CompletableFuture<Integer> broadcast(SocketMessageWrapper socketMessageWrapper) throws IOException {
+    public CompletableFuture<List<AckMessageWrapper>> broadcast(SocketMessageWrapper socketMessageWrapper) throws IOException {
 
         if(serverStatusUtil.isFailed()){
             return CompletableFuture.failedFuture(new IOException("Server Unavailable"));
@@ -97,30 +97,31 @@ public class SocketMessageUtil {
         List<Integer> PORT_POOL = portUtil.portPoolGenerator();
         int assignedPort = socketService.getAssignedPort();
 
-        List<CompletableFuture<Boolean>> futures = PORT_POOL.stream()
+        List<CompletableFuture<AckMessageWrapper>> futures = PORT_POOL.stream()
                 .filter(port -> port != assignedPort)
                 .map(port -> CompletableFuture.supplyAsync(() -> {
                     try{
                         SocketMessageWrapper smw = SocketMessageWrapper.from(socketMessageWrapper);
                         smw.setToPort(port);
                         AckMessageWrapper ackMessageWrapper = sendMessageToServer(port, smw);
-                        return ackMessageWrapper!=null;
+                        return ackMessageWrapper;
                     }
                     catch(IOException e){
                         log.error("IOException {}: {}", port, e.getMessage());
-                        return false;
+                        return null;
                     }
                     catch(Exception e){
                         log.error("Failed to send message to port {}: {}", port, e.getMessage());
-                        return false;
+                        return null;
                     }
                 }))
                 .collect(Collectors.toList());
 
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .thenApply(v -> (int) futures.stream()
-                .filter(CompletableFuture::join)
-                .count());
+                .thenApply(v -> futures.stream()
+                .map(CompletableFuture::join)
+                .filter(ack -> ack!=null)
+                .collect(Collectors.toList()));
 
     }
 
