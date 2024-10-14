@@ -1,7 +1,7 @@
 package com.lab.paxos.wrapper;
 
-import com.lab.paxos.model.network.acknowledgements.AckMessage;
-import com.lab.paxos.model.network.acknowledgements.AckServerStatusUpdate;
+import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
+import com.lab.paxos.networkObjects.acknowledgements.AckServerStatusUpdate;
 import lombok.Getter;
 
 import java.io.Serializable;
@@ -13,7 +13,8 @@ public class AckMessageWrapper implements Serializable {
     public enum MessageType {
         ACK_SERVER_STATUS_UPDATE,
         ACK_MESSAGE,
-        // other message types
+        PROMISE,
+        ACCEPTED
     }
 
     private MessageType type;

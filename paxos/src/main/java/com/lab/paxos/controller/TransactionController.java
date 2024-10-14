@@ -60,6 +60,8 @@ public class TransactionController {
                     transaction.setStatus(Transaction.TransactionStatus.PENDING);
                     sender.setEffectiveBalance(sender.getEffectiveBalance() - transactionDTO.getAmount());
                     userAccountRepository.save(sender);
+                    receiver.setEffectiveBalance(receiver.getEffectiveBalance() + transactionDTO.getAmount());
+                    userAccountRepository.save(receiver);
                     log.info("Performed transaction ${} : {} -> {}", transactionDTO.getAmount(), sender.getUsername(), receiver.getUsername());
                 }
                 else{

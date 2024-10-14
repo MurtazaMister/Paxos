@@ -13,4 +13,17 @@ public class ServerStatusUtil {
 
     private boolean failed = false;
 
+    public void setFailed(boolean failed) {
+        boolean previousFailed = this.failed;
+        this.failed = failed;
+
+        if(previousFailed && !failed){
+            log.info("Triggering SYNC for log consistency");
+
+            // SYNC code
+
+
+        }
+    }
+
 }

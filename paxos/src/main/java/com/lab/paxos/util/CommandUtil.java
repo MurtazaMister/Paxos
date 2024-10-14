@@ -1,6 +1,6 @@
 package com.lab.paxos.util;
 
-import com.lab.paxos.model.network.communique.Message;
+import com.lab.paxos.networkObjects.communique.Message;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

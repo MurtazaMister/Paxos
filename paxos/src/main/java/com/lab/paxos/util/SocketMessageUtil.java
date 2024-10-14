@@ -1,9 +1,9 @@
 package com.lab.paxos.util;
 
-import com.lab.paxos.model.network.acknowledgements.AckMessage;
-import com.lab.paxos.model.network.acknowledgements.AckServerStatusUpdate;
-import com.lab.paxos.model.network.communique.Message;
-import com.lab.paxos.model.network.communique.ServerStatusUpdate;
+import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
+import com.lab.paxos.networkObjects.acknowledgements.AckServerStatusUpdate;
+import com.lab.paxos.networkObjects.communique.Message;
+import com.lab.paxos.networkObjects.communique.ServerStatusUpdate;
 import com.lab.paxos.service.SocketService;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
