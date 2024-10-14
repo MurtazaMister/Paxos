@@ -82,7 +82,7 @@ public class SocketMessageUtil {
         } catch (Exception e) {
             log.error("Exception: {}", e.getMessage());
         }
-
+        if(ackMessageWrapper == null) throw new IOException("Service Unavailable");
         return ackMessageWrapper;
     }
 
@@ -100,8 +100,13 @@ public class SocketMessageUtil {
         for (int port : PORT_POOL) {
             if (port != assignedPort) {
                 socketMessageWrapper.setToPort(port);
-                AckMessageWrapper ackMessageWrapper = sendMessageToServer(port, socketMessageWrapper);
-                if(ackMessageWrapper != null) count++;
+                try{
+                    AckMessageWrapper ackMessageWrapper = sendMessageToServer(port, socketMessageWrapper);
+                    count++;
+                }
+                catch(IOException e){
+                    log.error("IOException {}: {}", port, e.getMessage());
+                }
             }
         }
 
