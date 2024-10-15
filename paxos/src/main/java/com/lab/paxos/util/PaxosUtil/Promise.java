@@ -1,10 +1,15 @@
 package com.lab.paxos.util.PaxosUtil;
 
+import com.lab.paxos.model.Transaction;
+import com.lab.paxos.model.TransactionBlock;
 import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
 import com.lab.paxos.networkObjects.communique.Prepare;
+import com.lab.paxos.repository.TransactionBlockRepository;
+import com.lab.paxos.repository.TransactionRepository;
 import com.lab.paxos.service.PaxosService;
 import com.lab.paxos.service.SocketService;
 import com.lab.paxos.util.SocketMessageUtil;
+import com.lab.paxos.util.Stopwatch;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +20,9 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 @Slf4j
@@ -23,8 +31,15 @@ public class Promise {
     @Autowired
     @Lazy
     PaxosService paxosService;
+    @Autowired
+    @Lazy
+    private TransactionRepository transactionRepository;
+    @Autowired
+    @Lazy
+    private TransactionBlockRepository transactionBlockRepository;
 
     public void promise(ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
+        LocalDateTime startTime = LocalDateTime.now();
         Prepare prepare = socketMessageWrapper.getPrepare();
 
         log.info("Received from port {}: {}", socketMessageWrapper.getFromPort(), prepare);
@@ -32,26 +47,41 @@ public class Promise {
         if(prepare.getBallotNumber() > paxosService.getBallotNumber()){
 
             paxosService.setBallotNumber(prepare.getBallotNumber());
+            paxosService.setLastBallotNumberUpdateTimestamp(System.currentTimeMillis());
 
-            AckMessage ackMessage = AckMessage.builder()
-                    .message("Accepted")
+            // To load all the transactions that haven't yet been commited and are lying in the local log
+            // to be sent to the leader
+            List<Transaction> transactionList = transactionRepository.findByStatusIn(Arrays.asList(Transaction.TransactionStatus.UNINITIALIZED, Transaction.TransactionStatus.PENDING));
+
+            TransactionBlock lastSavedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
+
+            com.lab.paxos.networkObjects.acknowledgements.Promise promise = com.lab.paxos.networkObjects.acknowledgements.Promise.builder()
+                    .ballotNumber(prepare.getBallotNumber())
+                    .transactions(transactionList)
+                    .hashPreviousCommittedBlock((lastSavedTransactionBlock!=null)?lastSavedTransactionBlock.getHash():null)
+                    .acceptNum(paxosService.getAcceptNum())
+                    .previousTransactionBlock(paxosService.getPreviousTransactionBlock())
                     .build();
 
             AckMessageWrapper ackMessageWrapper = AckMessageWrapper.builder()
-                    .type(AckMessageWrapper.MessageType.ACK_MESSAGE)
-                    .ackMessage(ackMessage)
+                    .type(AckMessageWrapper.MessageType.PROMISE)
+                    .promise(promise)
                     .fromPort(socketMessageWrapper.getToPort())
                     .toPort(socketMessageWrapper.getFromPort())
                     .build();
 
             out.writeObject(ackMessageWrapper);
 
-            log.info("Sent ACK to server {}: {}", ackMessageWrapper.getToPort(), ackMessage);
+            log.info("Sent ACK to server {}: {}", ackMessageWrapper.getToPort(), promise);
 
             out.flush();
+            LocalDateTime currentTime = LocalDateTime.now();
+            log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Promise"));
         }
         else{
             log.info("Rejecting due to smaller ballot number, current: {}, received: {}", paxosService.getPromise(), prepare.getBallotNumber());
+            LocalDateTime currentTime = LocalDateTime.now();
+            log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Promise"));
         }
     }
 }

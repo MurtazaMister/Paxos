@@ -9,6 +9,7 @@ import com.lab.paxos.service.PaxosService;
 import com.lab.paxos.service.SocketService;
 import com.lab.paxos.util.PortUtil;
 import com.lab.paxos.util.ServerStatusUtil;
+import com.lab.paxos.util.Stopwatch;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -38,7 +40,6 @@ public class TransactionController {
     private PaxosService paxosService;
 
     @PostMapping
-    @Transactional
     public ResponseEntity<Transaction> processTransaction(@RequestBody TransactionDTO transactionDTO) {
 
         if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
@@ -49,6 +50,10 @@ public class TransactionController {
         if(optionalSender.isPresent() && optionalReceiver.isPresent()) {
             UserAccount sender = optionalSender.get();
             UserAccount receiver = optionalReceiver.get();
+
+            if(sender.getId().equals(receiver.getId())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
 
             if(sender.getEffectiveBalance() >= transactionDTO.getAmount()){
 
@@ -77,10 +82,12 @@ public class TransactionController {
             }
             else{
                 log.info("Calling paxos service");
+                LocalDateTime startTime = LocalDateTime.now();
 
                 paxosService.prepare(socketService.getAssignedPort(), PaxosService.Purpose.AGGREGATE);
 
-                log.info("End");
+                LocalDateTime currentTime = LocalDateTime.now();
+                log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Paxos"));
 
                 log.info("Feature under progress");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();

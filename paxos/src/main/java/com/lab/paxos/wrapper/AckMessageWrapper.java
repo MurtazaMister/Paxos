@@ -2,6 +2,7 @@ package com.lab.paxos.wrapper;
 
 import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
 import com.lab.paxos.networkObjects.acknowledgements.AckServerStatusUpdate;
+import com.lab.paxos.networkObjects.acknowledgements.Promise;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -26,6 +27,7 @@ public class AckMessageWrapper implements Serializable {
     private MessageType type;
     private AckServerStatusUpdate ackServerStatusUpdate;
     private AckMessage ackMessage;
+    private Promise promise;
 
     private int fromPort;
     private int toPort;

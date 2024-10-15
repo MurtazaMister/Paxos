@@ -41,7 +41,6 @@ public class Transaction {
         UNINITIALIZED, // Not current server's transaction but keeping it for broadcasting when that server is up
         SERVED, // Not current server's transaction, but has been served to the respected server via the major block
         PENDING, // Current server's transaction that is yet to be committed
-        AWAITING, // Current server's transaction that has been appended to the MB and awaiting commit
         COMMITTED // Committed to the major block
     }
 

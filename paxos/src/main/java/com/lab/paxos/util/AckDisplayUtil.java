@@ -19,7 +19,8 @@ public class AckDisplayUtil {
                 break;
 
             case PROMISE:
-                log.info("");
+                log.info("Received Promise from server {}: {}", ackMessageWrapper.getFromPort(), ackMessageWrapper.getPromise());
+                break;
 
             default:
                 log.error("Received unexpected ACK from server {}", ackMessageWrapper);

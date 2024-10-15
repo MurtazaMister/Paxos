@@ -1,7 +1,7 @@
 package com.lab.paxos.model;
 
 import jakarta.persistence.*;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -13,6 +13,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Entity
+@Data
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class TransactionBlock implements Serializable {
 
@@ -34,7 +37,6 @@ public class TransactionBlock implements Serializable {
 
     public enum BlockStatus {
         PENDING,
-        ACCEPTED,
         COMMITTED
     }
 

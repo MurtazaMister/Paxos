@@ -1,12 +1,7 @@
 package com.lab.paxos.service;
 
-import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
-import com.lab.paxos.networkObjects.communique.Message;
-import com.lab.paxos.networkObjects.communique.Prepare;
+import com.lab.paxos.model.TransactionBlock;
 import com.lab.paxos.util.PaxosUtil.Promise;
-import com.lab.paxos.util.PortUtil;
-import com.lab.paxos.util.SocketMessageUtil;
-import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
 import lombok.Getter;
 import lombok.Setter;
@@ -38,6 +33,9 @@ public class PaxosService {
     Promise promise;
 
     private int ballotNumber = 0;
+    private long lastBallotNumberUpdateTimestamp = 0;
+    private Integer acceptNum = null;
+    private TransactionBlock previousTransactionBlock = null;
 
     public void prepare(int assignedPort, Purpose purpose){
         prepare.prepare(assignedPort, purpose);
