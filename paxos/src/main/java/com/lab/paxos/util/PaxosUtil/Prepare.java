@@ -30,6 +30,8 @@ public class Prepare {
 
     @Value("${paxos.prepare.delay}")
     long delay;
+    @Value("${server.population}")
+    int serverPopulation;
 
     public void prepare(int assignedPort, PaxosService.Purpose purpose) {
         LocalDateTime startTime = LocalDateTime.now();
@@ -43,10 +45,11 @@ public class Prepare {
             }
         }
         log.info("Sending prepare messages");
-        paxosService.setBallotNumber(paxosService.getBallotNumber()+1);
+        int ballotNumber = paxosService.getBallotNumber()+1;
+        paxosService.setBallotNumber(ballotNumber);
         try{
             com.lab.paxos.networkObjects.communique.Prepare prepare = com.lab.paxos.networkObjects.communique.Prepare.builder()
-                    .ballotNumber(paxosService.getBallotNumber())
+                    .ballotNumber(ballotNumber)
                     .purpose(purpose)
                     .build();
 
@@ -58,9 +61,23 @@ public class Prepare {
 
             try{
                 List<AckMessageWrapper> ackMessageWrapperList = socketMessageUtil.broadcast(socketMessageWrapper).get();
-                log.info("Received acknowledgements from {} servers", ackMessageWrapperList.size());
+                log.info("Received promise from {} servers", ackMessageWrapperList.size());
                 LocalDateTime currentTime = LocalDateTime.now();
                 log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Prepare"));
+
+                // If received majority votes, time to send the accept message
+                // 1 is the proposer itself, rest population/2
+                // If pop = 5, majority = 1 + 2 = 3
+                // If pop = 6, majority = 1 + 3 = 4
+                if(ackMessageWrapperList.size() >= serverPopulation/2) {
+                    // Moving on to the accept phase
+                    paxosService.accept(assignedPort, ballotNumber, purpose, ackMessageWrapperList);
+                }
+                else{
+                    // random timeout and restart paxos with a higher ballot number
+                    Stopwatch.randomSleep(25,75);
+                    this.prepare(assignedPort, purpose);
+                }
             }
             catch(InterruptedException | ExecutionException e){
                 log.error("Error while broadcasting messages: {}", e.getMessage());

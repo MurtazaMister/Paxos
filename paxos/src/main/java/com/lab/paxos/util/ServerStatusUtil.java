@@ -20,6 +20,10 @@ public class ServerStatusUtil {
         if(previousFailed && !failed){
             log.info("Triggering SYNC for log consistency");
 
+            // clean up the acceptnum and acceptval values
+            // as many rounds might already have happened and some transactions from its block
+            // might already have committed
+
             // SYNC code
 
 

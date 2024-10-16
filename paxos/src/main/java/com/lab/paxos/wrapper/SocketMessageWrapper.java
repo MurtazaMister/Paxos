@@ -1,8 +1,6 @@
 package com.lab.paxos.wrapper;
 
-import com.lab.paxos.networkObjects.communique.Message;
-import com.lab.paxos.networkObjects.communique.Prepare;
-import com.lab.paxos.networkObjects.communique.ServerStatusUpdate;
+import com.lab.paxos.networkObjects.communique.*;
 import lombok.*;
 
 import java.io.Serializable;
@@ -20,6 +18,8 @@ public class SocketMessageWrapper implements Serializable {
                 .message(socketMessageWrapper.getMessage())
                 .serverStatusUpdate(socketMessageWrapper.getServerStatusUpdate())
                 .prepare(socketMessageWrapper.getPrepare())
+                .accept(socketMessageWrapper.getAccept())
+                .decide(socketMessageWrapper.getDecide())
                 .build();
     }
 
@@ -41,4 +41,6 @@ public class SocketMessageWrapper implements Serializable {
     private ServerStatusUpdate serverStatusUpdate;
     private Message message;
     private Prepare prepare;
+    private Accept accept;
+    private Decide decide;
 }

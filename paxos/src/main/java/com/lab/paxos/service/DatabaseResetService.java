@@ -16,7 +16,7 @@ public class DatabaseResetService {
     @Autowired
     private ExitService exitService;
 
-    private String[] tables = {"transaction_block_transactions", "transaction_block", "transaction", "transaction_block_seq"};
+    private String[] tables = {"transaction_block", "transaction", "transaction_block_seq"};
 
     @Transactional
     public void resetDatabase() {

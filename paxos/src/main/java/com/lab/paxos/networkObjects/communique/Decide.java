@@ -1,5 +1,6 @@
 package com.lab.paxos.networkObjects.communique;
 
+import com.lab.paxos.model.TransactionBlock;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,5 +17,5 @@ public class Decide implements Serializable {
 
     private int ballotNumber;
 
-    private String blockHash;
+    private TransactionBlock transactionBlock;
 }

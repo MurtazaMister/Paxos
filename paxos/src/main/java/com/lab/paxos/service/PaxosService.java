@@ -1,7 +1,8 @@
 package com.lab.paxos.service;
 
 import com.lab.paxos.model.TransactionBlock;
-import com.lab.paxos.util.PaxosUtil.Promise;
+import com.lab.paxos.util.PaxosUtil.*;
+import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,7 +31,19 @@ public class PaxosService {
     com.lab.paxos.util.PaxosUtil.Prepare prepare;
 
     @Autowired
-    Promise promise;
+    private Promise promise;
+
+    @Autowired
+    private Accept accept;
+
+    @Autowired
+    private Accepted accepted;
+
+    @Autowired
+    private Decide decide;
+
+    @Autowired
+    private Commit commit;
 
     private int ballotNumber = 0;
     private long lastBallotNumberUpdateTimestamp = 0;
@@ -45,12 +58,20 @@ public class PaxosService {
         promise.promise(in, out, socketMessageWrapper);
     }
 
-    public void accept(Purpose purpose){
-
+    public void accept(int assignedPort, int ballotNumber, Purpose purpose, List<AckMessageWrapper> promiseAckMessageWrapperList) {
+        accept.accept(assignedPort, ballotNumber, purpose, promiseAckMessageWrapperList);
     }
 
-    public void decide(Purpose purpose){
+    public void accepted(ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
+        accepted.accepted(in, out, socketMessageWrapper);
+    }
 
+    public void decide(int assignedPort, int ballotNumber, TransactionBlock transactionBlock) {
+        decide.decide(assignedPort, ballotNumber, transactionBlock);
+    }
+
+    public void commit(int assignedPort, ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
+        commit.commit(assignedPort, in, out, socketMessageWrapper);
     }
 
 }

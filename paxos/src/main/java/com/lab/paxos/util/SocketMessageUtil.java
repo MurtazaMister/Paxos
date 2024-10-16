@@ -229,16 +229,26 @@ public class SocketMessageUtil {
                     case PREPARE:
                         paxosService.promise(in, out, message);
                         break;
+
+                    case ACCEPT:
+                        paxosService.accepted(in, out, message);
+                        break;
+
+                    case DECIDE:
+                        paxosService.commit(socketService.getAssignedPort(), in, out, message);
+                        break;
                 }
 
             }
         } catch (IOException | ClassNotFoundException e) {
-            log.trace("IOException: {}", e.getMessage());
+            log.error("IOException: {}", e.getMessage());
+        } catch (Exception e) {
+            log.error("Exception: {}", e.getMessage());
         } finally {
             try {
                 incoming.close();
             } catch (IOException e) {
-                log.trace("IOException: {}", e.getMessage());
+                log.error("IOException: {}", e.getMessage());
             }
         }
     }

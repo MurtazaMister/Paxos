@@ -1,5 +1,6 @@
 package com.lab.paxos.model;
 
+import com.lab.paxos.util.TransactionListConverterUtil;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,29 +26,17 @@ public class TransactionBlock implements Serializable {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long idx;
 
-    @OneToMany(cascade = CascadeType.ALL)
+    @Convert(converter = TransactionListConverterUtil.class)
     private List<Transaction> transactions;
 
     private String hash;
 
-    // Enum for block status
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private BlockStatus status;
-
-    public enum BlockStatus {
-        PENDING,
-        COMMITTED
-    }
-
     public String calculateHash() {
         try{
 
-            String transactionData = transactions.stream()
+            String data = transactions.stream()
                     .map(Objects::toString)
                     .collect(Collectors.joining(","));
-
-            String data = transactionData + status.toString();
 
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
 

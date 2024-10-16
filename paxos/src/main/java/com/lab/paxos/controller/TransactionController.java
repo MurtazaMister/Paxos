@@ -65,7 +65,7 @@ public class TransactionController {
                         .build();
 
                 if(socketService.getAssignedPort()- portUtil.basePort()+1 == sender.getId()){
-                    transaction.setStatus(Transaction.TransactionStatus.PENDING);
+                    transaction.setIsMine(true);
                     sender.setEffectiveBalance(sender.getEffectiveBalance() - transactionDTO.getAmount());
                     userAccountRepository.save(sender);
                     receiver.setEffectiveBalance(receiver.getEffectiveBalance() + transactionDTO.getAmount());
@@ -73,7 +73,7 @@ public class TransactionController {
                     log.info("Performed transaction ${} : {} -> {}", transactionDTO.getAmount(), sender.getUsername(), receiver.getUsername());
                 }
                 else{
-                    transaction.setStatus(Transaction.TransactionStatus.UNINITIALIZED);
+                    transaction.setIsMine(false);
                     log.info("Queued uninitialized transaction ${} : {} -> {}, sender unaffected", transactionDTO.getAmount(), sender.getUsername(), receiver.getUsername());
                 }
 
@@ -89,8 +89,21 @@ public class TransactionController {
                 LocalDateTime currentTime = LocalDateTime.now();
                 log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Paxos"));
 
-                log.info("Feature under progress");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                // Paxos complete
+                UserAccount updatedSender = userAccountRepository.findByUsername(transactionDTO.getUnameSender()).orElse(null);
+                if(updatedSender != null) {
+                    if(updatedSender.getEffectiveBalance() >= transactionDTO.getAmount()){
+                        return processTransaction(transactionDTO);
+                    }
+                    else{
+                        log.info("Insufficient funds for transaction ${} : {} -> {}", transactionDTO.getAmount(), sender.getUsername(), receiver.getUsername());
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                    }
+                }
+                else{
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+                }
+
             }
         }
         else{

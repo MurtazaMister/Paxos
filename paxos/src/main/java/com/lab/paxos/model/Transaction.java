@@ -3,6 +3,7 @@ package com.lab.paxos.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -14,7 +15,8 @@ import java.util.Base64;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Transaction {
+public class Transaction implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,21 +35,12 @@ public class Transaction {
     // Will be used primarily for uninitialized (missed) transactions, to compare
     private String hash; // Without including the 'id' field as it may differ across servers
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TransactionStatus status;
-
-    public enum TransactionStatus {
-        UNINITIALIZED, // Not current server's transaction but keeping it for broadcasting when that server is up
-        SERVED, // Not current server's transaction, but has been served to the respected server via the major block
-        PENDING, // Current server's transaction that is yet to be committed
-        COMMITTED // Committed to the major block
-    }
+    private Boolean isMine;
 
     public String calculateHash() {
         try{
 
-            String data = senderId+":"+receiverId+":"+amount+":"+timestamp+":"+status;
+            String data = senderId+":"+receiverId+":"+amount+":"+timestamp;
 
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
 

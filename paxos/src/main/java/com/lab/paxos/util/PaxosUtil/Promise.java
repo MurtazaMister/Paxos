@@ -15,6 +15,7 @@ import com.lab.paxos.wrapper.SocketMessageWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -51,7 +52,7 @@ public class Promise {
 
             // To load all the transactions that haven't yet been commited and are lying in the local log
             // to be sent to the leader
-            List<Transaction> transactionList = transactionRepository.findByStatusIn(Arrays.asList(Transaction.TransactionStatus.UNINITIALIZED, Transaction.TransactionStatus.PENDING));
+            List<Transaction> transactionList = transactionRepository.findAll(Sort.by(Sort.Direction.ASC, "id"));
 
             TransactionBlock lastSavedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
 
@@ -72,14 +73,14 @@ public class Promise {
 
             out.writeObject(ackMessageWrapper);
 
-            log.info("Sent ACK to server {}: {}", ackMessageWrapper.getToPort(), promise);
+            log.info("Sent promise to server {}: {}", ackMessageWrapper.getToPort(), promise);
 
             out.flush();
             LocalDateTime currentTime = LocalDateTime.now();
             log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Promise"));
         }
         else{
-            log.info("Rejecting due to smaller ballot number, current: {}, received: {}", paxosService.getPromise(), prepare.getBallotNumber());
+            log.info("Rejecting due to smaller ballot number, current: {}, received: {}", paxosService.getBallotNumber(), prepare.getBallotNumber());
             LocalDateTime currentTime = LocalDateTime.now();
             log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Promise"));
         }
