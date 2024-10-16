@@ -68,7 +68,7 @@ public class UserAccountController {
         UserAccount userAccount = userAccountRepository.findById(userId).orElse(null);
 
         if(userAccount != null){
-            return ResponseEntity.ok(userAccount.getEffectiveBalance());
+            return ResponseEntity.ok(userAccount.getBalance());
         }
 
         return ResponseEntity.notFound().build();

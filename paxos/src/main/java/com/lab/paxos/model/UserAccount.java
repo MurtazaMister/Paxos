@@ -15,5 +15,4 @@ public class UserAccount {
     private String username;
     private String password;
     private Long balance;
-    private Long effectiveBalance;
 }

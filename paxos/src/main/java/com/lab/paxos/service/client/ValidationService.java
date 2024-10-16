@@ -41,7 +41,7 @@ public class ValidationService {
     private PortUtil portUtil;
 
     @Autowired
-    private ExitService exitService;
+    private ClientService clientService;
 
     public ValidationService(RestTemplate restTemplate, ApiConfig apiConfig) {
         this.restTemplate = restTemplate;
@@ -49,70 +49,15 @@ public class ValidationService {
 
     public Long identifyServer(String username) {
 
-        Long id = -1L;
-
+        Long id = clientService.getId(username);
         List<Integer> portsArray = portUtil.portPoolGenerator();
 
-        int finalPort = -1;
+        int respectivePort = portsArray.get(0) + Integer.parseInt(offset) + Math.toIntExact(id) - 1;
 
-        for(int port : portsArray) {
-            try{
-                String url = restServerUrl+":"+Integer.toString(port+Integer.parseInt(offset))+"/server/test";
-                boolean up = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url).toUriString(), Boolean.class);
-                if(up) {
-                    finalPort = port;
-                    break;
-                }
-            }
-            catch (HttpServerErrorException e) {
-                continue;
-            }
-            catch(Exception e){
-                continue;
-            }
-        }
+        log.info("Connected to server port {}", respectivePort);
 
-        if(finalPort == -1){
-            log.error("No servers available");
-            exitService.exitApplication(0);
-        }
-
-        String url = restServerUrl+":"+Integer.toString(finalPort+Integer.parseInt(offset))+"/user/getId";
-
-        log.info("Sending req: {}", url);
-
-        try {
-
-            id = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url)
-                    .queryParam("username", username)
-                    .toUriString(), Long.class);
-
-            int respectivePort = portsArray.get(0) + Integer.parseInt(offset) + Math.toIntExact(id) - 1;
-
-            log.info("Connected to server port {}", respectivePort);
-
-            apiConfig.setApiPort(respectivePort);
-            apiConfig.setRestServerUrlWithPort(restServerUrl + ":" + apiConfig.getApiPort());
-
-        } catch (HttpServerErrorException e){
-            if(e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
-                log.error("Service unavailable : {}", e.getMessage());
-            } else {
-                log.error("Server error: {}", e.getMessage());
-            }
-        }
-        catch (HttpClientErrorException e) {
-
-            if(e.getStatusCode().value() == 404){
-                return -1L;
-            }
-            else{
-                log.error(e.getMessage());
-            }
-
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        }
+        apiConfig.setApiPort(respectivePort);
+        apiConfig.setRestServerUrlWithPort(restServerUrl + ":" + apiConfig.getApiPort());
 
         return id;
 

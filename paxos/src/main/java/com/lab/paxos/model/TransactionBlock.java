@@ -26,6 +26,7 @@ public class TransactionBlock implements Serializable {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long idx;
 
+    @Column(columnDefinition = "MEDIUMTEXT")
     @Convert(converter = TransactionListConverterUtil.class)
     private List<Transaction> transactions;
 

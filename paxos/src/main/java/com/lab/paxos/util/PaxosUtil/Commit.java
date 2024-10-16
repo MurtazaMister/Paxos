@@ -5,6 +5,8 @@ import com.lab.paxos.model.TransactionBlock;
 import com.lab.paxos.model.UserAccount;
 import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
 import com.lab.paxos.networkObjects.communique.Decide;
+import com.lab.paxos.repository.TransactionBlockRepository;
+import com.lab.paxos.repository.TransactionRepository;
 import com.lab.paxos.repository.UserAccountRepository;
 import com.lab.paxos.service.PaxosService;
 import com.lab.paxos.util.PortUtil;
@@ -34,6 +36,12 @@ public class Commit {
     @Autowired
     @Lazy
     private UserAccountRepository userAccountRepository;
+    @Autowired
+    @Lazy
+    private TransactionBlockRepository transactionBlockRepository;
+    @Autowired
+    @Lazy
+    private TransactionRepository transactionRepository;
 
     public void commit(int assignedPort, ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
         LocalDateTime startTime = LocalDateTime.now();
@@ -48,7 +56,7 @@ public class Commit {
         int currentClientId = assignedPort - portsArray.get(0) + 1;
 
         for(Transaction transaction : transactionBlock.getTransactions()) {
-            if((!transaction.getIsMine()) || (transaction.getIsMine() && (transaction.getSenderId() != currentClientId))) {
+            if((!transaction.getIsMine()) || (transaction.getSenderId() != currentClientId)) {
 
                 // Execute transactions
                 //      If isMine = true
@@ -63,16 +71,29 @@ public class Commit {
 
                 long senderBalance = senderAccount.getBalance() - transaction.getAmount();
                 senderAccount.setBalance(senderBalance);
-                senderAccount.setEffectiveBalance(senderBalance);
+                senderAccount.setBalance(senderBalance);
 
                 long receiverBalance = receiverAccount.getBalance() + transaction.getAmount();
                 receiverAccount.setBalance(receiverBalance);
-                receiverAccount.setEffectiveBalance(receiverBalance);
+                receiverAccount.setBalance(receiverBalance);
 
                 userAccountRepository.save(senderAccount);
                 userAccountRepository.save(receiverAccount);
 
             }
+        }
+
+        transactionBlockRepository.save(transactionBlock);
+
+        List<Transaction> toDelete = transactionBlock.getTransactions()
+                .stream()
+                .filter(transaction -> {
+                    return (transaction.getSenderId() == currentClientId) || (!transaction.getIsMine());
+                })
+                .toList();
+
+        if(!toDelete.isEmpty()){
+            transactionRepository.deleteAll(toDelete);
         }
 
         AckMessage ackMessage = AckMessage.builder()

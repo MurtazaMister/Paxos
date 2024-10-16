@@ -55,7 +55,7 @@ public class TransactionController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
             }
 
-            if(sender.getEffectiveBalance() >= transactionDTO.getAmount()){
+            if(sender.getBalance() >= transactionDTO.getAmount()){
 
                 Transaction transaction = Transaction.builder()
                         .amount(transactionDTO.getAmount())
@@ -66,9 +66,9 @@ public class TransactionController {
 
                 if(socketService.getAssignedPort()- portUtil.basePort()+1 == sender.getId()){
                     transaction.setIsMine(true);
-                    sender.setEffectiveBalance(sender.getEffectiveBalance() - transactionDTO.getAmount());
+                    sender.setBalance(sender.getBalance() - transactionDTO.getAmount());
                     userAccountRepository.save(sender);
-                    receiver.setEffectiveBalance(receiver.getEffectiveBalance() + transactionDTO.getAmount());
+                    receiver.setBalance(receiver.getBalance() + transactionDTO.getAmount());
                     userAccountRepository.save(receiver);
                     log.info("Performed transaction ${} : {} -> {}", transactionDTO.getAmount(), sender.getUsername(), receiver.getUsername());
                 }
@@ -92,7 +92,7 @@ public class TransactionController {
                 // Paxos complete
                 UserAccount updatedSender = userAccountRepository.findByUsername(transactionDTO.getUnameSender()).orElse(null);
                 if(updatedSender != null) {
-                    if(updatedSender.getEffectiveBalance() >= transactionDTO.getAmount()){
+                    if(updatedSender.getBalance() >= transactionDTO.getAmount()){
                         return processTransaction(transactionDTO);
                     }
                     else{

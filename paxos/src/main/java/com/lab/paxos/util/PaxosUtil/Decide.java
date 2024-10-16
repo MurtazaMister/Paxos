@@ -3,6 +3,8 @@ package com.lab.paxos.util.PaxosUtil;
 import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.TransactionBlock;
 import com.lab.paxos.model.UserAccount;
+import com.lab.paxos.repository.TransactionBlockRepository;
+import com.lab.paxos.repository.TransactionRepository;
 import com.lab.paxos.repository.UserAccountRepository;
 import com.lab.paxos.service.PaxosService;
 import com.lab.paxos.util.PortUtil;
@@ -20,6 +22,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -35,6 +38,12 @@ public class Decide {
     private UserAccountRepository userAccountRepository;
     @Autowired
     private PortUtil portUtil;
+    @Autowired
+    @Lazy
+    private TransactionBlockRepository transactionBlockRepository;
+    @Autowired
+    @Lazy
+    private TransactionRepository transactionRepository;
 
     public void decide(int assignedPort, int ballotNumber, TransactionBlock transactionBlock) {
         List<Integer> portsArray = portUtil.portPoolGenerator();
@@ -67,7 +76,7 @@ public class Decide {
 
                 for(Transaction transaction : transactionBlock.getTransactions()){
 
-                    if((!transaction.getIsMine()) || (transaction.getIsMine() && (transaction.getSenderId() != currentClientId))) {
+                    if((!transaction.getIsMine()) || (transaction.getSenderId() != currentClientId)) {
 
                         // Execute transactions
                         //      If isMine = true
@@ -82,17 +91,30 @@ public class Decide {
 
                         long senderBalance = senderAccount.getBalance() - transaction.getAmount();
                         senderAccount.setBalance(senderBalance);
-                        senderAccount.setEffectiveBalance(senderBalance);
+                        senderAccount.setBalance(senderBalance);
 
                         long receiverBalance = receiverAccount.getBalance() + transaction.getAmount();
                         receiverAccount.setBalance(receiverBalance);
-                        receiverAccount.setEffectiveBalance(receiverBalance);
+                        receiverAccount.setBalance(receiverBalance);
 
                         userAccountRepository.save(senderAccount);
                         userAccountRepository.save(receiverAccount);
 
                     }
 
+                }
+
+                transactionBlockRepository.save(transactionBlock);
+
+                List<Transaction> toDelete = transactionBlock.getTransactions()
+                        .stream()
+                        .filter(transaction -> {
+                            return (transaction.getSenderId() == currentClientId) || (!transaction.getIsMine());
+                        })
+                        .toList();
+
+                if(!toDelete.isEmpty()){
+                    transactionRepository.deleteAll(toDelete);
                 }
 
             }

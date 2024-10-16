@@ -1,15 +1,24 @@
 package com.lab.paxos.service.client;
 
 import com.lab.paxos.config.client.ApiConfig;
-import com.lab.paxos.dto.TransactionDTO;
 import com.lab.paxos.model.Transaction;
 import com.lab.paxos.service.ExitService;
+import com.lab.paxos.util.PortUtil;
+import com.lab.paxos.util.ServerStatusUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -19,6 +28,7 @@ public class ClientService {
     private ExitService exitService;
 
     @Autowired
+    @Lazy
     private ValidationService validationService;
 
     private Long userId;
@@ -26,6 +36,19 @@ public class ClientService {
     private ApiConfig apiConfig;
     @Autowired
     private ApiService apiService;
+
+    @Autowired
+    private CsvFileService csvFileService;
+    @Autowired
+    private PortUtil portUtil;
+    @Value("${rest.server.url}")
+    private String restServerUrl;
+    @Autowired
+    private RestTemplate restTemplate;
+    @Value("${rest.server.offset}")
+    private String offset;
+    @Autowired
+    private ServerStatusUtil serverStatusUtil;
 
     public void startClient(){
 
@@ -63,6 +86,43 @@ public class ClientService {
         }
     }
 
+    public Long getId(String username){
+        List<Integer> portsArray = portUtil.portPoolGenerator();
+
+        Long id = -1L;
+        int finalPort = serverStatusUtil.getActiveServer();
+
+        String url = restServerUrl+":"+finalPort+"/user/getId";
+
+        try {
+
+            id = restTemplate.getForObject(UriComponentsBuilder.fromHttpUrl(url)
+                    .queryParam("username", username)
+                    .toUriString(), Long.class);
+
+        } catch (HttpServerErrorException e){
+            if(e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
+                log.error("Service unavailable : {}", e.getMessage());
+            } else {
+                log.error("Server error: {}", e.getMessage());
+            }
+        }
+        catch (HttpClientErrorException e) {
+
+            if(e.getStatusCode().value() == 404){
+                return -1L;
+            }
+            else{
+                log.error(e.getMessage());
+            }
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+
+        return id;
+    }
+
     private void listenForCommands(){
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))){
             String input;
@@ -76,6 +136,7 @@ public class ClientService {
                         - e (exit)
                         - f (fail server) <port (optional)>
                         - r (resume server) <port (optional)>
+                        - x (execute test file) <path (optional)>
                         """);
                 input = reader.readLine();
 
@@ -118,6 +179,14 @@ public class ClientService {
                             }
                             else{
                                 apiService.resumeServer(null);
+                            }
+                            break;
+                        case "x":
+                            if(parts.length > 1){
+                                csvFileService.readAndExecuteCsvFile(parts[1]);
+                            }
+                            else{
+                                csvFileService.readAndExecuteCsvFile();
                             }
                             break;
                         default:

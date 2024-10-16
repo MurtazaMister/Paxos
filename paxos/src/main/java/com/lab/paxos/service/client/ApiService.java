@@ -5,10 +5,12 @@ import com.lab.paxos.dto.TransactionDTO;
 import com.lab.paxos.dto.ValidateUserDTO;
 import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.UserAccount;
+import com.lab.paxos.service.ExitService;
 import com.lab.paxos.util.PortUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -35,6 +37,13 @@ public class ApiService {
 
     @Autowired
     private PortUtil portUtil;
+
+    @Value("${rest.server.url}")
+    private String restServerUrl;
+    @Autowired
+    @Lazy
+    private ClientService clientService;
+
 
     // validating a client with userId and password
     public Boolean validate(Long id, String password){
@@ -70,9 +79,25 @@ public class ApiService {
         return false;
     }
 
+    public Long balanceCheck(String username) {
+        Long id = clientService.getId(username);
+
+        List<Integer> portsArray = portUtil.portPoolGenerator();
+
+        int respectivePort = portsArray.get(0) + Integer.parseInt(offset) + Math.toIntExact(id) - 1;
+
+        String url = restServerUrl+":"+respectivePort+"/user/balance";
+
+        return balanceCheck(id, url);
+    }
+
     // balance check
-    public Long balanceCheck(Long id){
+    public Long balanceCheck(Long id) {
         String url = apiConfig.getRestServerUrlWithPort()+"/user/balance";
+        return balanceCheck(id, url);
+    }
+
+    public Long balanceCheck(Long id, String url){
         log.info("Sending req: {}", url);
 
         Long balance = null;
@@ -101,11 +126,9 @@ public class ApiService {
         }
 
         return null;
-
     }
 
-    public void failServer(Integer port){
-        String url = apiConfig.getRestServerUrlWithPort()+"/server/fail";
+    public void failServer(Integer port, String url){
         log.info("Sending req: {} {}", url, (port!=null)?" for port "+port:"");
         Boolean failed = false;
 
@@ -130,8 +153,12 @@ public class ApiService {
         }
     }
 
-    public void resumeServer(Integer port){
-        String url = apiConfig.getRestServerUrlWithPort()+"/server/resume";
+    public void failServer(Integer port){
+        String url = apiConfig.getRestServerUrlWithPort()+"/server/fail";
+        failServer(port, url);
+    }
+
+    public void resumeServer(Integer port, String url){
         log.info("Sending req: {} {}", url, (port!=null)?" for port "+port:"");
         Boolean resumed = false;
 
@@ -156,8 +183,12 @@ public class ApiService {
         }
     }
 
-    public Transaction transact(String sName, String rName, Long amount){
-        String url = apiConfig.getRestServerUrlWithPort()+"/transaction";
+    public void resumeServer(Integer port){
+        String url = apiConfig.getRestServerUrlWithPort()+"/server/resume";
+        resumeServer(port, url);
+    }
+
+    public Transaction transact(String sName, String rName, Long amount, String url){
         log.info("Sending req: {}", url);
 
         TransactionDTO transactionDTO = TransactionDTO.builder()
@@ -217,5 +248,10 @@ public class ApiService {
             log.trace(e.getMessage());
         }
         return null;
+    }
+
+    public Transaction transact(String sName, String rName, Long amount){
+        String url = apiConfig.getRestServerUrlWithPort()+"/transaction";
+        return transact(sName, rName, amount, url);
     }
 }

@@ -47,6 +47,11 @@ public class ServerController {
             log.info("{}: Server down", socketService.getAssignedPort());
             return ResponseEntity.ok(Boolean.valueOf(serverStatusUtil.isFailed()));
         }
+        else if(port == socketService.getAssignedPort()){
+            serverStatusUtil.setFailed(true);
+            log.info("{}: Server down", socketService.getAssignedPort());
+            return ResponseEntity.ok(Boolean.valueOf(serverStatusUtil.isFailed()));
+        }
         else{
             try{
                 log.info("Sending fail message to server {}", port);
@@ -72,6 +77,11 @@ public class ServerController {
     @GetMapping("/resume")
     public ResponseEntity<Boolean> resumeServer(@RequestParam(required = false) Integer port){
         if(port == null){
+            serverStatusUtil.setFailed(false);
+            log.info("{}: Server up & running", socketService.getAssignedPort());
+            return ResponseEntity.ok(Boolean.valueOf(!serverStatusUtil.isFailed()));
+        }
+        else if(port == socketService.getAssignedPort()){
             serverStatusUtil.setFailed(false);
             log.info("{}: Server up & running", socketService.getAssignedPort());
             return ResponseEntity.ok(Boolean.valueOf(!serverStatusUtil.isFailed()));
