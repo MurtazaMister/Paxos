@@ -2,7 +2,6 @@ package com.lab.paxos.util.PaxosUtil;
 
 import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.TransactionBlock;
-import com.lab.paxos.model.UserAccount;
 import com.lab.paxos.repository.TransactionBlockRepository;
 import com.lab.paxos.repository.TransactionRepository;
 import com.lab.paxos.repository.UserAccountRepository;
@@ -14,18 +13,18 @@ import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 @Component
 @Slf4j
+@Transactional
 public class Decide {
     @Autowired
     @Lazy
@@ -57,6 +56,8 @@ public class Decide {
                     .transactionBlock(transactionBlock)
                     .build();
 
+            log.info("Decide message: {}", decide);
+
             SocketMessageWrapper socketMessageWrapper = SocketMessageWrapper.builder()
                     .type(SocketMessageWrapper.MessageType.DECIDE)
                     .decide(decide)
@@ -73,33 +74,12 @@ public class Decide {
                 // CODE TO COMMIT BLOCK ON THIS SERVER
 
                 int currentClientId = assignedPort - portsArray.get(0) + 1;
+                int updatedRows = 0;
 
                 for(Transaction transaction : transactionBlock.getTransactions()){
 
-                    if((!transaction.getIsMine()) || (transaction.getSenderId() != currentClientId)) {
-
-                        // Execute transactions
-                        //      If isMine = true
-                        //          Execute the transactions where sender id != current id
-                        //      If isMine = false
-                        //          Execute all transactions
-
-                        UserAccount senderAccount = userAccountRepository.findById(transaction.getSenderId()).orElse(null);
-                        UserAccount receiverAccount = userAccountRepository.findById(transaction.getReceiverId()).orElse(null);
-
-                        if(senderAccount == null || receiverAccount == null){ continue; }
-
-                        long senderBalance = senderAccount.getBalance() - transaction.getAmount();
-                        senderAccount.setBalance(senderBalance);
-                        senderAccount.setBalance(senderBalance);
-
-                        long receiverBalance = receiverAccount.getBalance() + transaction.getAmount();
-                        receiverAccount.setBalance(receiverBalance);
-                        receiverAccount.setBalance(receiverBalance);
-
-                        userAccountRepository.save(senderAccount);
-                        userAccountRepository.save(receiverAccount);
-
+                    if(transaction.getSenderId() != currentClientId) {
+                         updatedRows = userAccountRepository.performTransaction(transaction.getSenderId(), transaction.getReceiverId(), transaction.getAmount(), updatedRows);
                     }
 
                 }
@@ -109,7 +89,7 @@ public class Decide {
                 List<Transaction> toDelete = transactionBlock.getTransactions()
                         .stream()
                         .filter(transaction -> {
-                            return (transaction.getSenderId() == currentClientId) || (!transaction.getIsMine());
+                            return transaction.getSenderId() == currentClientId;
                         })
                         .toList();
 

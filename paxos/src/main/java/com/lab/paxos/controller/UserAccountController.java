@@ -25,7 +25,7 @@ public class UserAccountController {
     @GetMapping("/getId")
     public ResponseEntity<Long> getUserIdByUsername(@RequestParam String username) {
 
-        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 
         log.info("getUserIdByUsername(username) called with username: {}", username);
 
@@ -40,7 +40,7 @@ public class UserAccountController {
     @PostMapping("/validate")
     public ResponseEntity<Boolean> validateUser(@RequestBody ValidateUserDTO bodyUserAccount) {
 
-        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 
         log.info("validateUser(userAccount) called with userId: {}", bodyUserAccount.getUserId());
 
@@ -61,7 +61,7 @@ public class UserAccountController {
     @GetMapping("/balance")
     public ResponseEntity<Long> balanceCheck(@RequestParam Long userId){
 
-        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 
         log.info("balanceCheck(userId) called with id: {}", userId);
 

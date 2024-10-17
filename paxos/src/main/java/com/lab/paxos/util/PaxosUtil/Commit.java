@@ -2,7 +2,6 @@ package com.lab.paxos.util.PaxosUtil;
 
 import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.TransactionBlock;
-import com.lab.paxos.model.UserAccount;
 import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
 import com.lab.paxos.networkObjects.communique.Decide;
 import com.lab.paxos.repository.TransactionBlockRepository;
@@ -17,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -43,9 +43,12 @@ public class Commit {
     @Lazy
     private TransactionRepository transactionRepository;
 
+    @Transactional
     public void commit(int assignedPort, ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
         LocalDateTime startTime = LocalDateTime.now();
         Decide decide = socketMessageWrapper.getDecide();
+
+        log.info("Received decide: {}", decide);
 
         TransactionBlock transactionBlock = decide.getTransactionBlock();
 
@@ -55,66 +58,42 @@ public class Commit {
         List<Integer> portsArray = portUtil.portPoolGenerator();
         int currentClientId = assignedPort - portsArray.get(0) + 1;
 
+        int updatedRows = 0;
+
         for(Transaction transaction : transactionBlock.getTransactions()) {
-            if((!transaction.getIsMine()) || (transaction.getSenderId() != currentClientId)) {
-
-                // Execute transactions
-                //      If isMine = true
-                //          Execute the transactions where sender id != current id
-                //      If isMine = false
-                //          Execute all transactions
-
-                UserAccount senderAccount = userAccountRepository.findById(transaction.getSenderId()).orElse(null);
-                UserAccount receiverAccount = userAccountRepository.findById(transaction.getReceiverId()).orElse(null);
-
-                if(senderAccount == null || receiverAccount == null){ continue; }
-
-                long senderBalance = senderAccount.getBalance() - transaction.getAmount();
-                senderAccount.setBalance(senderBalance);
-                senderAccount.setBalance(senderBalance);
-
-                long receiverBalance = receiverAccount.getBalance() + transaction.getAmount();
-                receiverAccount.setBalance(receiverBalance);
-                receiverAccount.setBalance(receiverBalance);
-
-                userAccountRepository.save(senderAccount);
-                userAccountRepository.save(receiverAccount);
-
+            if(transaction.getSenderId() != currentClientId) {
+                updatedRows = userAccountRepository.performTransaction(transaction.getSenderId(), transaction.getReceiverId(), transaction.getAmount(), updatedRows);
             }
         }
 
-        transactionBlockRepository.save(transactionBlock);
+        transactionBlock = transactionBlockRepository.save(transactionBlock);
 
-        List<Transaction> toDelete = transactionBlock.getTransactions()
-                .stream()
-                .filter(transaction -> {
-                    return (transaction.getSenderId() == currentClientId) || (!transaction.getIsMine());
-                })
-                .toList();
-
-        if(!toDelete.isEmpty()){
-            transactionRepository.deleteAll(toDelete);
-        }
-
-        AckMessage ackMessage = AckMessage.builder()
-                .message("Commit successful")
+        com.lab.paxos.networkObjects.acknowledgements.Commit commit = com.lab.paxos.networkObjects.acknowledgements.Commit.builder()
+                .committedTransactionBlock(transactionBlock.getHash())
+                .ballotNumber(decide.getBallotNumber())
                 .build();
 
         AckMessageWrapper ackMessageWrapper = AckMessageWrapper.builder()
-                .type(AckMessageWrapper.MessageType.ACK_MESSAGE)
-                .ackMessage(ackMessage)
+                .type(AckMessageWrapper.MessageType.COMMIT)
+                .commit(commit)
                 .fromPort(socketMessageWrapper.getToPort())
                 .toPort(socketMessageWrapper.getFromPort())
                 .build();
 
         out.writeObject(ackMessageWrapper);
-
-        log.info("Sent accepted to server {}: {}", ackMessageWrapper.getToPort(), ackMessage);
-
-        out.flush();
         LocalDateTime currentTime = LocalDateTime.now();
         log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Commit"));
 
+        log.info("Sent committed to server {}: {}", ackMessageWrapper.getToPort(), commit);
+
+        List<Transaction> toDelete = transactionBlock.getTransactions()
+                .stream()
+                .filter(transaction -> transaction.getSenderId() == currentClientId)
+                .toList();
+
+        if(!toDelete.isEmpty()){
+            transactionRepository.deleteAll(toDelete);
+        }
     }
 
 }

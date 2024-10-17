@@ -2,6 +2,7 @@ package com.lab.paxos.util;
 
 import com.lab.paxos.controller.ServerController;
 import com.lab.paxos.service.ExitService;
+import com.lab.paxos.service.PaxosService;
 import com.lab.paxos.service.client.ApiService;
 import lombok.Getter;
 import lombok.Setter;
@@ -40,19 +41,22 @@ public class ServerStatusUtil {
     private ServerController serverController;
     @Autowired
     private ApiService apiService;
+    @Autowired
+    @Lazy
+    private PaxosService paxosService;
 
     public void setFailed(boolean failed) {
         boolean previousFailed = this.failed;
         this.failed = failed;
 
         if(previousFailed && !failed){
-            log.info("Triggering SYNC for log consistency");
+            log.info("Server recovered, resetting acceptNum and previousTransactionBlock");
 
             // clean up the acceptnum and acceptval values
             // as many rounds might already have happened and some transactions from its block
             // might already have committed
-
-            // SYNC code
+            paxosService.setAcceptNum(null);
+            paxosService.setPreviousTransactionBlock(null);
 
         }
     }

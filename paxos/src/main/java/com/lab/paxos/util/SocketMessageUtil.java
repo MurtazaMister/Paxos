@@ -49,9 +49,9 @@ public class SocketMessageUtil {
 
     public AckMessageWrapper sendMessageToServer(int targetPort, SocketMessageWrapper message) throws IOException {
 
-        if(serverStatusUtil.isFailed()){
-            throw new IOException("Server Unavailable");
-        }
+//        if(serverStatusUtil.isFailed()){
+//            throw new IOException("Server Unavailable");
+//        }
 
         AckMessageWrapper ackMessageWrapper = null;
         try(Socket socket = new Socket()){
@@ -94,9 +94,9 @@ public class SocketMessageUtil {
 
     public CompletableFuture<List<AckMessageWrapper>> broadcast(SocketMessageWrapper socketMessageWrapper) throws IOException {
 
-        if(serverStatusUtil.isFailed()){
-            return CompletableFuture.failedFuture(new IOException("Server Unavailable"));
-        }
+//        if(serverStatusUtil.isFailed()){
+//            return CompletableFuture.failedFuture(new IOException("Server Unavailable"));
+//        }
 
         List<Integer> PORT_POOL = portUtil.portPoolGenerator();
         int assignedPort = socketService.getAssignedPort();
@@ -143,20 +143,11 @@ public class SocketMessageUtil {
     private void handleIncomingMessage(@NotNull Socket incoming) {
         try {
 
-            ObjectInputStream in = new ObjectInputStream(incoming.getInputStream());
             ObjectOutputStream out = new ObjectOutputStream(incoming.getOutputStream());
+            ObjectInputStream in = new ObjectInputStream(incoming.getInputStream());
 
             SocketMessageWrapper message;
             while ((message = (SocketMessageWrapper) in.readObject()) != null) { // incoming message from another server
-
-                // failed server will accept a resume request
-                if(serverStatusUtil.isFailed()){
-                    if(!(message.getType() == SocketMessageWrapper.MessageType.SERVER_STATUS_UPDATE && !message.getServerStatusUpdate().isFailServer())){
-                        log.error("Rejecting incoming message, current server down");
-//                        incoming.close();
-                        return;
-                    }
-                }
 
                 switch (message.getType()){
                     case SERVER_STATUS_UPDATE:
@@ -227,21 +218,26 @@ public class SocketMessageUtil {
                         break;
 
                     case PREPARE:
+                        if(serverStatusUtil.isFailed()) return;
                         paxosService.promise(in, out, message);
+                        out.flush();
                         break;
 
                     case ACCEPT:
+                        if(serverStatusUtil.isFailed()) return;
                         paxosService.accepted(in, out, message);
+                        out.flush();
                         break;
 
                     case DECIDE:
+                        if(serverStatusUtil.isFailed()) return;
                         paxosService.commit(socketService.getAssignedPort(), in, out, message);
+                        out.flush();
                         break;
                 }
-
             }
         } catch (IOException | ClassNotFoundException e) {
-            log.error("IOException: {}", e.getMessage());
+            // log.error("IOException | ClassNotFoundException: {}", e.toString());
         } catch (Exception e) {
             log.error("Exception: {}", e.getMessage());
         } finally {

@@ -1,9 +1,11 @@
 package com.lab.paxos.service.client;
 
 import com.lab.paxos.model.Transaction;
+import com.lab.paxos.service.ExitService;
 import com.lab.paxos.util.ParseUtil;
 import com.lab.paxos.util.PortUtil;
 import com.lab.paxos.util.ServerStatusUtil;
+import com.lab.paxos.util.Stopwatch;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -18,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +46,9 @@ public class CsvFileService {
     @Autowired
     @Lazy
     private PortUtil portUtil;
+    @Autowired
+    @Lazy
+    private ExitService exitService;
 
     public void readAndExecuteCsvFile() {
         readAndExecuteCsvFile(filePath);
@@ -76,10 +82,7 @@ public class CsvFileService {
                         System.out.println("Exit? (Y/n)");
                         String ans = inputReader.readLine();
                         if(ans.equals("Y")){
-                            inputReader.close();
-                            reader.close();
-                            csvParser.close();
-                            return;
+                            exitService.exitApplication(0);
                         }
                     }
 
@@ -88,7 +91,10 @@ public class CsvFileService {
                     currentTransaction = parseUtil.parseTransaction(record.get(1));
                     activeServerIds = parseUtil.parseActiveServerList(record.get(2));
 
+//                    LocalDateTime startTime = LocalDateTime.now();
                     serverStatusUtil.setServerStatuses(activeServerIds);
+//                    LocalDateTime currentTime = LocalDateTime.now();
+//                    log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Server status reset"));
 
                 }
                 else {

@@ -33,14 +33,14 @@ public class ServerController {
 
     @GetMapping("/test")
     public ResponseEntity<Boolean> test() {
-        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
         return ResponseEntity.ok(true);
     }
 
     @GetMapping("/fail")
     public ResponseEntity<Boolean> failServer(@RequestParam(required = false) Integer port){
 
-        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 
         if(port == null){
             serverStatusUtil.setFailed(true);
@@ -88,7 +88,7 @@ public class ServerController {
         }
         else{
 
-            if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//            if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 
             try{
                 ServerStatusUpdate serverStatusUpdate = ServerStatusUpdate.builder()

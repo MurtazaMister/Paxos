@@ -1,9 +1,6 @@
 package com.lab.paxos.wrapper;
 
-import com.lab.paxos.networkObjects.acknowledgements.Accepted;
-import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
-import com.lab.paxos.networkObjects.acknowledgements.AckServerStatusUpdate;
-import com.lab.paxos.networkObjects.acknowledgements.Promise;
+import com.lab.paxos.networkObjects.acknowledgements.*;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
@@ -22,7 +19,8 @@ public class AckMessageWrapper implements Serializable {
         ACK_SERVER_STATUS_UPDATE,
         ACK_MESSAGE,
         PROMISE,
-        ACCEPTED
+        ACCEPTED,
+        COMMIT
     }
 
     private MessageType type;
@@ -30,6 +28,7 @@ public class AckMessageWrapper implements Serializable {
     private AckMessage ackMessage;
     private Promise promise;
     private Accepted accepted;
+    private Commit commit;
 
     private int fromPort;
     private int toPort;

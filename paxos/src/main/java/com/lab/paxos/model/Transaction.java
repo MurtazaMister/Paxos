@@ -35,8 +35,6 @@ public class Transaction implements Serializable {
     // Will be used primarily for uninitialized (missed) transactions, to compare
     private String hash; // Without including the 'id' field as it may differ across servers
 
-    private Boolean isMine;
-
     public String calculateHash() {
         try{
 

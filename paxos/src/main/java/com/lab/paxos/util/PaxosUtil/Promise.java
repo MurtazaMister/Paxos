@@ -75,7 +75,6 @@ public class Promise {
 
             log.info("Sent promise to server {}: {}", ackMessageWrapper.getToPort(), promise);
 
-            out.flush();
             LocalDateTime currentTime = LocalDateTime.now();
             log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Promise"));
         }

@@ -55,7 +55,6 @@ public class Accepted {
 
             log.info("Sent accepted to server {}: {}", ackMessageWrapper.getToPort(), accepted);
 
-            out.flush();
             LocalDateTime currentTime = LocalDateTime.now();
             log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Accepted"));
         }

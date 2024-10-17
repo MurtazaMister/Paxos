@@ -2,12 +2,15 @@ package com.lab.paxos.service;
 
 import com.lab.paxos.model.TransactionBlock;
 import com.lab.paxos.util.PaxosUtil.*;
+import com.lab.paxos.util.ServerStatusUtil;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -21,6 +24,10 @@ import java.util.concurrent.ExecutionException;
 @Getter
 @Setter
 public class PaxosService {
+
+    @Autowired
+    @Lazy
+    private ServerStatusUtil serverStatusUtil;
 
     public enum Purpose{
         SYNC,
@@ -49,8 +56,18 @@ public class PaxosService {
     private long lastBallotNumberUpdateTimestamp = 0;
     private Integer acceptNum = null;
     private TransactionBlock previousTransactionBlock = null;
+    @Value("${server.resume.timeout}")
+    private int serverResumeDelay;
 
     public void prepare(int assignedPort, Purpose purpose){
+        while(serverStatusUtil.isFailed()) {
+            try {
+                Thread.sleep(serverResumeDelay);
+                log.info("Sleeping for {}ms until server resume", serverResumeDelay);
+            } catch (Exception e) {
+                log.error("Exception while waiting for server {} to resume: {}", assignedPort, e.getMessage());
+            }
+        }
         prepare.prepare(assignedPort, purpose);
     }
 

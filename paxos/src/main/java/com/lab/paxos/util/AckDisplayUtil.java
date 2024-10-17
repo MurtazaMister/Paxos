@@ -26,6 +26,10 @@ public class AckDisplayUtil {
                 log.info("Received Accepted from server {}: {}", ackMessageWrapper.getFromPort(), ackMessageWrapper.getAccepted());
                 break;
 
+            case COMMIT:
+                log.info("Received Commit from server {}: {}", ackMessageWrapper.getFromPort(), ackMessageWrapper.getCommit());
+                break;
+
             default:
                 log.error("Received unexpected ACK from server {}", ackMessageWrapper);
         }

@@ -24,10 +24,10 @@ public class CommandUtil {
 
     public void listenForCommands(int assignedPort) {
         try {
-            if(serverStatusUtil.isFailed()){
-                log.error("Rejecting incoming command, current server down");
-                return;
-            }
+//            if(serverStatusUtil.isFailed()){
+//                log.error("Rejecting incoming command, current server down");
+//                return;
+//            }
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             String input;
             while (true) {

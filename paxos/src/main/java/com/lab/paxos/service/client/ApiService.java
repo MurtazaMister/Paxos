@@ -210,36 +210,7 @@ public class ApiService {
             }
         }
         catch (HttpServerErrorException e) {
-            if(e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
-                log.error("Service unavailable : {}", e.getMessage());
-                log.info("Broadcasting transaction to exactly 1 alive server");
-
-                List<Integer> portsArray = portUtil.portPoolGenerator();
-
-                for(int port : portsArray) {
-                    if(port == apiConfig.getApiPort()) continue;
-                    url = apiConfig.getRestServerUrl() + ":" + (port + Integer.parseInt(offset)) + "/transaction";
-                    log.info("Sending req: {}", url);
-
-                    try {
-                        ResponseEntity<Transaction> response = restTemplate.exchange(url, HttpMethod.POST, request, Transaction.class);
-
-                        if (response.getStatusCode() == HttpStatus.OK) {
-                            return response.getBody();
-                        }
-                    } catch (HttpServerErrorException ex) {
-                        if (e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE) {
-                            {
-                                log.error("Service unavailable {} : {}", port, e.getMessage());
-                            }
-                        }
-                    } catch (Exception ex) {
-                        log.error("Server error: {}", ex.getMessage());
-                    }
-                }
-            } else {
-                log.error("Server error: {}", e.getMessage());
-            }
+            log.error(e.getMessage());
         }
         catch (HttpClientErrorException e){
             log.error(e.getMessage());
