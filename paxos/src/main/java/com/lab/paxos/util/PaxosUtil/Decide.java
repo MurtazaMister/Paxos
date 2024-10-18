@@ -79,7 +79,7 @@ public class Decide {
                 for(Transaction transaction : transactionBlock.getTransactions()){
 
                     if(transaction.getSenderId() != currentClientId) {
-                         updatedRows = userAccountRepository.performTransaction(transaction.getSenderId(), transaction.getReceiverId(), transaction.getAmount(), updatedRows);
+                         updatedRows = userAccountRepository.performTransaction(transaction.getSenderId(), transaction.getReceiverId(), transaction.getAmount());
                     }
 
                 }

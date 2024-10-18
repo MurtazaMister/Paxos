@@ -5,6 +5,7 @@ import com.lab.paxos.model.Transaction;
 import com.lab.paxos.service.ExitService;
 import com.lab.paxos.util.PortUtil;
 import com.lab.paxos.util.ServerStatusUtil;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,7 @@ import java.util.List;
 
 @Service
 @Slf4j
+@Getter
 public class ClientService {
 
     @Autowired

@@ -58,15 +58,23 @@ public class PaxosService {
     private TransactionBlock previousTransactionBlock = null;
     @Value("${server.resume.timeout}")
     private int serverResumeDelay;
+    @Value("${paxos.prepare.delay}")
+    private int prepareDelay;
 
     public void prepare(int assignedPort, Purpose purpose){
-        while(serverStatusUtil.isFailed()) {
-            try {
-                Thread.sleep(serverResumeDelay);
-                log.info("Sleeping for {}ms until server resume", serverResumeDelay);
-            } catch (Exception e) {
-                log.error("Exception while waiting for server {} to resume: {}", assignedPort, e.getMessage());
+        try {
+            if(serverStatusUtil.isFailed()) {
+                while(serverStatusUtil.isFailed()){
+                        Thread.sleep(serverResumeDelay);
+                        log.info("Sleeping for {}ms until server resumes", serverResumeDelay);
+                }
             }
+            else{
+                log.info("Sleeping for {}ms before initiating paxos", prepareDelay);
+                Thread.sleep(prepareDelay);
+            }
+        } catch (Exception e) {
+            log.error("Exception while waiting for server {} to resume: {}", assignedPort, e.getMessage());
         }
         prepare.prepare(assignedPort, purpose);
     }

@@ -28,7 +28,7 @@ public class Prepare {
     @Lazy
     SocketMessageUtil socketMessageUtil;
 
-    @Value("${paxos.prepare.delay}")
+    @Value("${paxos.anticipated.delay}")
     long delay;
     @Value("${server.population}")
     int serverPopulation;

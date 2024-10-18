@@ -13,6 +13,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -23,6 +24,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -49,6 +51,9 @@ public class CsvFileService {
     @Autowired
     @Lazy
     private ExitService exitService;
+    @Autowired
+    @Lazy
+    private ClientService clientService;
 
     public void readAndExecuteCsvFile() {
         readAndExecuteCsvFile(filePath);
@@ -69,6 +74,7 @@ public class CsvFileService {
             Transaction currentTransaction;
 
             log.info("Beginning file read, enter continue");
+            char sender_name , receiver_name;
 
             for(CSVRecord record : csvParser) {
                 Integer setNumber = tryParseSetNumber(record.get(0));
@@ -83,6 +89,7 @@ public class CsvFileService {
                         String ans = inputReader.readLine();
                         if(ans.equals("Y")){
                             exitService.exitApplication(0);
+                            Thread.sleep(5000);
                         }
                     }
 
@@ -103,12 +110,17 @@ public class CsvFileService {
 
                 url = restServerUrl+":"+(ports.get(0) - 1 + offset + currentTransaction.getSenderId())+"/transaction";
 
-                Transaction transaction = apiService.transact(Character.toString((char)(baseUname + currentTransaction.getSenderId() - 1)),
-                        Character.toString((char)(baseUname + currentTransaction.getReceiverId() - 1)),
+                sender_name = (char)(baseUname + currentTransaction.getSenderId() - 1);
+                receiver_name = (char)(baseUname + currentTransaction.getReceiverId() - 1);
+
+                CompletableFuture<Transaction> futureTransaction = apiService.asyncTransact(Character.toString(sender_name),
+                        Character.toString(receiver_name),
                         currentTransaction.getAmount(),
                         url);
 
-                log.info("Set {}: Executing transaction - {}", currentSetNumber, transaction);
+                log.info("Set {}: Executing transaction - {}:{}->{}", currentSetNumber, sender_name, receiver_name, currentTransaction.getAmount());
+
+                futureTransaction.thenAccept(transaction -> {if(transaction!=null) log.info("Transaction executed: {}", transaction); else log.error("Transaction failed");});
 
             }
         }
@@ -128,12 +140,12 @@ public class CsvFileService {
                 if(cont || exit) break;
                 System.out.println("""
                         Enter commands:
-                        - printBalance <username (optional)>
-                        - printLog <username (optional)>
-                        - printDB <username (optional)>
+                        - printBalance <username (optional)> # Gets the balance of the client = {username} from its own server
+                        - printLog <username (optional)> # Gets the logs of the server handling client = {username}
+                        - printDB <username (optional)> # Gets the db at the server handling client = {username}
                         - performance
                         - continue | c
-                        - exit | e (return to client interface)
+                        - exit | e
                         """);
                 input = reader.readLine();
 
@@ -142,7 +154,10 @@ public class CsvFileService {
 
                     switch(parts[0]){
                         case "printBalance":
-                            if(parts.length == 2){
+                            if(parts.length == 1){
+                                System.out.println("Balance: $"+apiService.balanceCheck(clientService.getUserId()));
+                            }
+                            else if(parts.length == 2){
                                 System.out.println("Balance: $"+apiService.balanceCheck(parts[1]));
                             }
                             else{

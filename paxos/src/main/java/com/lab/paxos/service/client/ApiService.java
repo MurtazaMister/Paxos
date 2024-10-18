@@ -21,6 +21,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
@@ -44,6 +47,7 @@ public class ApiService {
     @Lazy
     private ClientService clientService;
 
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     // validating a client with userId and password
     public Boolean validate(Long id, String password){
@@ -224,5 +228,10 @@ public class ApiService {
     public Transaction transact(String sName, String rName, Long amount){
         String url = apiConfig.getRestServerUrlWithPort()+"/transaction";
         return transact(sName, rName, amount, url);
+    }
+
+    public CompletableFuture<Transaction> asyncTransact(String sName, String rName, Long amount, String url){
+        return CompletableFuture.supplyAsync(() -> transact(sName, rName, amount, url), executorService)
+                .thenApplyAsync(transaction -> transaction);
     }
 }

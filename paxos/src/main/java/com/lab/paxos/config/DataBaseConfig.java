@@ -42,11 +42,11 @@ public class DataBaseConfig {
                     "    IF sender_balance >= p_amount THEN " +
                     "        UPDATE user_account ua " +
                     "        SET balance = CASE " +
-                    "            WHEN ua.id = p_receiverId THEN ua.balance + p_amount " +
                     "            WHEN ua.id = p_senderId THEN ua.balance - p_amount " +
+                    "            WHEN ua.id = p_receiverId THEN ua.balance + p_amount " +
                     "        END " +
                     "        WHERE ua.id IN (p_senderId, p_receiverId); " +
-                    "        SET p_updatedRows = ROW_COUNT(); " +
+                    "        SET p_updatedRows = 2; " +
                     "    ELSE " +
                     "        SET p_updatedRows = 0; " +
                     "    END IF; " +

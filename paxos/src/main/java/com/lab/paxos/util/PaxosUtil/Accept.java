@@ -33,8 +33,6 @@ public class Accept {
     @Autowired
     @Lazy
     private TransactionRepository transactionRepository;
-    @Value("${paxos.prepare.delay}")
-    long delay;
     @Value("${server.population}")
     int serverPopulation;
 
@@ -130,8 +128,7 @@ public class Accept {
                     paxosService.decide(assignedPort, ballotNumber, accept.getBlock());
                 }
                 else{
-                    // random timeout and restart paxos with a higher ballot number
-                    Stopwatch.randomSleep(25,75);
+                    // Restart paxos with a higher ballot number
                     paxosService.prepare(assignedPort, purpose);
                 }
 
