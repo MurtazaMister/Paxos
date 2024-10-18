@@ -1,7 +1,6 @@
 package com.lab.paxos.util.PaxosUtil;
 
 import com.lab.paxos.service.PaxosService;
-import com.lab.paxos.service.SocketService;
 import com.lab.paxos.util.SocketMessageUtil;
 import com.lab.paxos.util.Stopwatch;
 import com.lab.paxos.wrapper.AckMessageWrapper;
@@ -13,7 +12,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -28,29 +26,31 @@ public class Prepare {
     @Lazy
     SocketMessageUtil socketMessageUtil;
 
-    @Value("${paxos.anticipated.delay}")
-    long delay;
     @Value("${server.population}")
     int serverPopulation;
 
-    public void prepare(int assignedPort, PaxosService.Purpose purpose) {
+    @Value("${paxos.prepare.delay}")
+    private int prepareDelay;
+    @Value("${paxos.prepare.range}")
+    private int prepareDelayRange;
+
+    public void prepare(int assignedPort) {
         LocalDateTime startTime = LocalDateTime.now();
         log.info("Paxos initiated on port {}", assignedPort);
-        if(paxosService.getLastBallotNumberUpdateTimestamp() + delay >= System.currentTimeMillis()) {
-            try {
-                Thread.sleep(delay - (System.currentTimeMillis() - paxosService.getLastBallotNumberUpdateTimestamp()));
-                log.warn("Ongoing paxos round anticipated, delaying for a few ms");
-            } catch (InterruptedException e) {
-                log.error("Exception: {}", e.getMessage());
-            }
-        }
+//        if(paxosService.getLastBallotNumberUpdateTimestamp() + delay >= System.currentTimeMillis()) {
+//            try {
+//                Thread.sleep(delay - (System.currentTimeMillis() - paxosService.getLastBallotNumberUpdateTimestamp()));
+//                log.warn("Ongoing paxos round anticipated, delaying for a few ms");
+//            } catch (InterruptedException e) {
+//                log.error("Exception: {}", e.getMessage());
+//            }
+//        }
         log.info("Sending prepare messages");
         int ballotNumber = paxosService.getBallotNumber()+1;
         paxosService.setBallotNumber(ballotNumber);
         try{
             com.lab.paxos.networkObjects.communique.Prepare prepare = com.lab.paxos.networkObjects.communique.Prepare.builder()
                     .ballotNumber(ballotNumber)
-                    .purpose(purpose)
                     .build();
 
             SocketMessageWrapper socketMessageWrapper = SocketMessageWrapper.builder()
@@ -71,12 +71,12 @@ public class Prepare {
                 // If pop = 6, majority = 1 + 3 = 4
                 if(ackMessageWrapperList.size() >= serverPopulation/2) {
                     // Moving on to the accept phase
-                    paxosService.accept(assignedPort, ballotNumber, purpose, ackMessageWrapperList);
+                    paxosService.accept(assignedPort, ballotNumber, ackMessageWrapperList);
                 }
                 else{
-                    // random timeout and restart paxos with a higher ballot number
-                    Stopwatch.randomSleep(25,75);
-                    this.prepare(assignedPort, purpose);
+                    // restart paxos with a higher ballot number
+                    Stopwatch.randomSleep(prepareDelay - prepareDelayRange, prepareDelay + prepareDelayRange);
+                    paxosService.prepare(assignedPort);
                 }
             }
             catch(InterruptedException | ExecutionException e){

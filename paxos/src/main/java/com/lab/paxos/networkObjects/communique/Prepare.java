@@ -14,5 +14,7 @@ public class Prepare implements Serializable {
 
     private int ballotNumber;
 
-    private PaxosService.Purpose purpose;
+    private Long lastCommittedTransactionBlockId;
+
+    private String lastCommittedTransactionBlockHash;
 }

@@ -35,8 +35,12 @@ public class Accept {
     private TransactionRepository transactionRepository;
     @Value("${server.population}")
     int serverPopulation;
+    @Value("${paxos.prepare.delay}")
+    private int prepareDelay;
+    @Value("${paxos.prepare.range}")
+    private int prepareDelayRange;
 
-    public void accept(int assignedPort, int ballotNumber, PaxosService.Purpose purpose, List<AckMessageWrapper> promiseAckMessageWrapperList){
+    public void accept(int assignedPort, int ballotNumber, List<AckMessageWrapper> promiseAckMessageWrapperList){
         // If any transaction blocks are received
             // Check for all the transaction blocks within the acknowledgements
             // and with the current server, compare the ballot numbers
@@ -129,7 +133,8 @@ public class Accept {
                 }
                 else{
                     // Restart paxos with a higher ballot number
-                    paxosService.prepare(assignedPort, purpose);
+                    Stopwatch.randomSleep(prepareDelay - prepareDelayRange, prepareDelay + prepareDelayRange);
+                    paxosService.prepare(assignedPort);
                 }
 
             }

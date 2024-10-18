@@ -20,7 +20,9 @@ public class AckMessageWrapper implements Serializable {
         ACK_MESSAGE,
         PROMISE,
         ACCEPTED,
-        COMMIT
+        COMMIT,
+        ACK_SYNC,
+        ACK_UPDATE
     }
 
     private MessageType type;
@@ -29,6 +31,8 @@ public class AckMessageWrapper implements Serializable {
     private Promise promise;
     private Accepted accepted;
     private Commit commit;
+    private AckSync ackSync;
+    private AckUpdate ackUpdate;
 
     private int fromPort;
     private int toPort;

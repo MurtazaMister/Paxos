@@ -13,6 +13,7 @@ import com.lab.paxos.util.Stopwatch;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,11 @@ public class TransactionController {
     private PortUtil portUtil;
     @Autowired
     private PaxosService paxosService;
+    @Value("${paxos.prepare.delay}")
+    private int prepareDelay;
+    @Value("${paxos.prepare.range}")
+    private int prepareDelayRange;
+    private int rounds = 0;
 
 //    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -87,6 +93,7 @@ public class TransactionController {
                 log.info("Updated rows: {}", updatedRows);
                 log.info("For transaction - {} : {} -> {}", transactionDTO.getAmount(), sender.getId(), receiver.getId());
                 if(updatedRows != 0) {
+                    rounds = 0;
                     Transaction transaction = Transaction.builder()
                             .amount(transactionDTO.getAmount())
                             .senderId(sender.getId())
@@ -97,10 +104,18 @@ public class TransactionController {
                     return ResponseEntity.ok(transaction);
                 }
                 else{
+                    rounds++;
                     log.info("Calling paxos service");
                     LocalDateTime startTime = LocalDateTime.now();
 
-                    paxosService.prepare(socketService.getAssignedPort(), PaxosService.Purpose.AGGREGATE);
+                    if(rounds > 1){
+                        try {
+                            Stopwatch.randomSleep(prepareDelay-prepareDelayRange, prepareDelay+prepareDelayRange);
+                        } catch (InterruptedException e) {
+                            log.error("Exception while waiting for paxos re-initiation round {} for transaction {}", rounds, transactionDTO);
+                        }
+                    }
+                    paxosService.prepare(socketService.getAssignedPort());
 
                     LocalDateTime currentTime = LocalDateTime.now();
                     log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Paxos"));

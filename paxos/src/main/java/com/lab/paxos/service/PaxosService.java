@@ -29,11 +29,6 @@ public class PaxosService {
     @Lazy
     private ServerStatusUtil serverStatusUtil;
 
-    public enum Purpose{
-        SYNC,
-        AGGREGATE
-    }
-
     @Autowired
     com.lab.paxos.util.PaxosUtil.Prepare prepare;
 
@@ -58,10 +53,8 @@ public class PaxosService {
     private TransactionBlock previousTransactionBlock = null;
     @Value("${server.resume.timeout}")
     private int serverResumeDelay;
-    @Value("${paxos.prepare.delay}")
-    private int prepareDelay;
 
-    public void prepare(int assignedPort, Purpose purpose){
+    public void prepare(int assignedPort){
         try {
             if(serverStatusUtil.isFailed()) {
                 while(serverStatusUtil.isFailed()){
@@ -69,22 +62,22 @@ public class PaxosService {
                         log.info("Sleeping for {}ms until server resumes", serverResumeDelay);
                 }
             }
-            else{
-                log.info("Sleeping for {}ms before initiating paxos", prepareDelay);
-                Thread.sleep(prepareDelay);
-            }
+//            else{
+//                log.info("Sleeping for {}ms before initiating paxos", prepareDelay);
+//                Thread.sleep(prepareDelay);
+//            }
         } catch (Exception e) {
             log.error("Exception while waiting for server {} to resume: {}", assignedPort, e.getMessage());
         }
-        prepare.prepare(assignedPort, purpose);
+        prepare.prepare(assignedPort);
     }
 
     public void promise(ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
         promise.promise(in, out, socketMessageWrapper);
     }
 
-    public void accept(int assignedPort, int ballotNumber, Purpose purpose, List<AckMessageWrapper> promiseAckMessageWrapperList) {
-        accept.accept(assignedPort, ballotNumber, purpose, promiseAckMessageWrapperList);
+    public void accept(int assignedPort, int ballotNumber, List<AckMessageWrapper> promiseAckMessageWrapperList) {
+        accept.accept(assignedPort, ballotNumber, promiseAckMessageWrapperList);
     }
 
     public void accepted(ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {

@@ -1,6 +1,5 @@
 package com.lab.paxos.networkObjects.acknowledgements;
 
-import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.TransactionBlock;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,18 +13,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Promise implements Serializable {
+public class AckUpdate implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private int ballotNumber;
-
-    private List<Transaction> transactions;
-
-    private Integer acceptNum;
-
-    private TransactionBlock previousTransactionBlock;
-
-    private Long lastCommittedTransactionBlockId;
-
-    private String lastCommittedTransactionBlockHash;
+    private List<TransactionBlock> blocks;
 }

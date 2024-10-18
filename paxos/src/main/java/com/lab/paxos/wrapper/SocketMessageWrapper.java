@@ -20,6 +20,8 @@ public class SocketMessageWrapper implements Serializable {
                 .prepare(socketMessageWrapper.getPrepare())
                 .accept(socketMessageWrapper.getAccept())
                 .decide(socketMessageWrapper.getDecide())
+                .sync(socketMessageWrapper.getSync())
+                .update(socketMessageWrapper.getUpdate())
                 .build();
     }
 
@@ -30,7 +32,9 @@ public class SocketMessageWrapper implements Serializable {
         MESSAGE,
         PREPARE,
         ACCEPT,
-        DECIDE
+        DECIDE,
+        SYNC,
+        UPDATE
     }
 
     private MessageType type;
@@ -43,4 +47,6 @@ public class SocketMessageWrapper implements Serializable {
     private Prepare prepare;
     private Accept accept;
     private Decide decide;
+    private Sync sync;
+    private Update update;
 }
