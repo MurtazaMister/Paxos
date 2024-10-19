@@ -51,7 +51,7 @@ public class Promise {
             paxosService.setLastBallotNumberUpdateTimestamp(System.currentTimeMillis());
 
             TransactionBlock lastCommittedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-            Long lastCommittedTransactionBlockId = (lastCommittedTransactionBlock==null)?0:lastCommittedTransactionBlock.getIdx();
+            Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
             String lastCommittedTransactionBlockHash = (lastCommittedTransactionBlock==null)?null:lastCommittedTransactionBlock.getHash();
 
             List<Transaction> transactionList = null;

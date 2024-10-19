@@ -60,7 +60,7 @@ public class Prepare {
         paxosService.setBallotNumber(ballotNumber);
         try{
             TransactionBlock lastCommittedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-            Long lastCommittedTransactionBlockId = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getIdx():0;
+            Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
             String lastCommittedTransactionBlockHash = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getHash():null;
 
             com.lab.paxos.networkObjects.communique.Prepare prepare = com.lab.paxos.networkObjects.communique.Prepare.builder()
@@ -142,7 +142,7 @@ public class Prepare {
                     // send SYNC to everyone with un-updated log
                     // terminate paxos and restart
 
-                    paxosService.update(assignedPort, lastCommittedTransactionBlockId, highestCommittedTransactionBlockId, listNodesWithLatestLog);
+                    paxosService.update(assignedPort, lastCommittedTransactionBlockHash, highestCommittedTransactionBlockHash, listNodesWithLatestLog);
 
                     Stopwatch.randomSleep(prepareDelay - prepareDelayRange, prepareDelay + prepareDelayRange);
                     paxosService.prepare(assignedPort);

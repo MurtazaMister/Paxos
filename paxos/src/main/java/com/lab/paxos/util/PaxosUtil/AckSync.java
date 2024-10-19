@@ -47,9 +47,10 @@ public class AckSync {
         out.writeObject(ackMessageWrapper);
 
         TransactionBlock transactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-        long lastCommittedTransactionBlockId = (transactionBlock == null)?0:transactionBlock.getIdx();
+        long lastCommittedTransactionBlockId = transactionBlockRepository.count();
+        String lastCommittedTransactionBlockHash = transactionBlock.getHash();
 
-        paxosService.update(assignedPort, lastCommittedTransactionBlockId, sync.getLastCommittedTransactionBlockId(), sync.getListNodesWithLatestLog());
+        paxosService.update(assignedPort, lastCommittedTransactionBlockHash, sync.getLastCommittedTransactionBlockHash(), sync.getListNodesWithLatestLog());
 
     }
 }

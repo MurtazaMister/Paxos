@@ -67,7 +67,7 @@ public class Accept {
             }
 
             TransactionBlock lastCommittedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-            Long lastCommittedTransactionBlockId = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getIdx():0;
+            Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
             String lastCommittedTransactionBlockHash = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getHash():null;
 
             com.lab.paxos.networkObjects.communique.Accept accept = com.lab.paxos.networkObjects.communique.Accept.builder()

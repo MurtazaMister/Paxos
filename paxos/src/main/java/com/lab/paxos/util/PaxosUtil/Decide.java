@@ -51,7 +51,7 @@ public class Decide {
         log.info("Sending decide message and then performing transactions");
 
         TransactionBlock lastCommittedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-        Long lastCommittedTransactionBlockId = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getIdx():0;
+        Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
         String lastCommittedTransactionBlockHash = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getHash():null;
 
         try {

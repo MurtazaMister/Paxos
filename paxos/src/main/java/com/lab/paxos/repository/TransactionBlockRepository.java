@@ -10,4 +10,5 @@ public interface TransactionBlockRepository extends JpaRepository<TransactionBlo
     boolean existsByHash(String hash);
     TransactionBlock getByIdx(Long id);
     Optional<TransactionBlock> findByHash(String hash);
+    TransactionBlock findIdByHash(String hash);
 }

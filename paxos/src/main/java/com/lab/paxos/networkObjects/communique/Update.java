@@ -16,9 +16,9 @@ public class Update implements Serializable {
 
     // (startId, endId]
 
-    private Long startId; // Value until which the sender has blocks
+    private String lastCommittedTransactionBlockHash; // Value until which the sender has blocks
     // Start from startId + 1
 
-    private Long endId; // Until endId
+    private String highestCommittedTransactionBlockHash; // Until endId
 
 }

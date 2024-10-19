@@ -30,11 +30,18 @@ public class AckUpdate {
     public void ackUpdate(int assignedPort, ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
         Update update = socketMessageWrapper.getUpdate();
 
-        long startId = update.getStartId();
-        long endId = update.getEndId();
+        String lastCommittedTransactionBlockHash = update.getLastCommittedTransactionBlockHash();
+        String highestCommittedTransactionBlockHash = update.getHighestCommittedTransactionBlockHash();
+
+        TransactionBlock transactionBlock = transactionBlockRepository.findIdByHash(lastCommittedTransactionBlockHash);
+
+        long startId = (transactionBlock!=null)? transactionBlock.getIdx() : 0;
+
+        transactionBlock = transactionBlockRepository.findIdByHash(highestCommittedTransactionBlockHash);
+        long endId = (transactionBlock!=null)?transactionBlock.getIdx():0;
 
         List<TransactionBlock> transactionBlockList = new ArrayList<>();
-        TransactionBlock transactionBlock = null;
+        transactionBlock = null;
         for(long i = startId + 1; i<=endId ; i++ ){
             transactionBlock = transactionBlockRepository.getByIdx(i);
             if(transactionBlock!=null) transactionBlockList.add(transactionBlock);

@@ -128,8 +128,8 @@ public class PaxosService {
         ackSync.ackSync(assignedPort, in, out, socketMessageWrapper);
     }
 
-    public void update(int assignedPort, long startId, long endId, List<Integer> PORT_POOL) throws IOException {
-        update.update(assignedPort, startId, endId, PORT_POOL);
+    public void update(int assignedPort, String lastCommittedTransactionBlockHash, String highestCommittedTransactionBlockHash, List<Integer> PORT_POOL) throws IOException {
+        update.update(assignedPort, lastCommittedTransactionBlockHash, highestCommittedTransactionBlockHash, PORT_POOL);
     }
 
     public void ackUpdate(int assignedPort, ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {

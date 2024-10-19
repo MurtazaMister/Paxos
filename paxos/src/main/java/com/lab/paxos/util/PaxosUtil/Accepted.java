@@ -40,7 +40,7 @@ public class Accepted {
         log.info("Received from port {}: {}", socketMessageWrapper.getFromPort(), socketMessageWrapper.getAccept());
 
         TransactionBlock transactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-        Long lastCommittedTransactionBlockId = (transactionBlock!=null)?transactionBlock.getIdx():0;
+        Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
         String lastCommittedTransactionBlockHash = (transactionBlock!=null)?transactionBlock.getHash():null;
 
         if(accept.getBallotNumber() >= paxosService.getBallotNumber() && lastCommittedTransactionBlockId.equals(accept.getLastCommittedTransactionBlockId())){

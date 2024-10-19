@@ -53,7 +53,7 @@ public class Commit {
         Decide decide = socketMessageWrapper.getDecide();
 
         TransactionBlock transactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-        Long lastCommittedTransactionBlockId = (transactionBlock!=null)?transactionBlock.getIdx():0;
+        Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
         String lastCommittedTransactionBlockHash = (transactionBlock!=null)?transactionBlock.getHash():null;
 
         if(lastCommittedTransactionBlockId.equals(decide.getLastCommittedTransactionBlockId())) {

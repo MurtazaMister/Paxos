@@ -33,14 +33,14 @@ public class Update {
     @Lazy
     private TransactionBlockRepository transactionBlockRepository;
 
-    public void update(int assignedPort, long startId, long endId, List<Integer> PORT_POOL) {
+    public void update(int assignedPort, String lastCommittedTransactionBlockHash, String highestCommittedTransactionBlockHash, List<Integer> PORT_POOL) {
 
         Random random = new Random();
         int selectedPortIndexForUpdate = random.nextInt(PORT_POOL.size());
 
         com.lab.paxos.networkObjects.communique.Update update = com.lab.paxos.networkObjects.communique.Update.builder()
-                .startId(startId)
-                .endId(endId)
+                .lastCommittedTransactionBlockHash(lastCommittedTransactionBlockHash)
+                .highestCommittedTransactionBlockHash(highestCommittedTransactionBlockHash)
                 .build();
 
         SocketMessageWrapper socketMessageWrapper = SocketMessageWrapper.builder()
