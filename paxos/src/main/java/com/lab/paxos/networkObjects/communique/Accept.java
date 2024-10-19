@@ -24,5 +24,5 @@ public class Accept implements Serializable {
 
     private String lastCommittedTransactionBlockHash;
 
-    List<Integer> listNodesWithLatestLog;
+    private List<Integer> listNodesWithLatestLog;
 }

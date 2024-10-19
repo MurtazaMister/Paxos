@@ -89,7 +89,6 @@ public class CsvFileService {
                         String ans = inputReader.readLine();
                         if(ans.equals("Y")){
                             exitService.exitApplication(0);
-                            Thread.sleep(5000);
                         }
                     }
 

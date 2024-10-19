@@ -50,18 +50,30 @@ public class Promise {
             paxosService.setBallotNumber(prepare.getBallotNumber());
             paxosService.setLastBallotNumberUpdateTimestamp(System.currentTimeMillis());
 
+            TransactionBlock lastCommittedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
+            Long lastCommittedTransactionBlockId = (lastCommittedTransactionBlock==null)?0:lastCommittedTransactionBlock.getIdx();
+            String lastCommittedTransactionBlockHash = (lastCommittedTransactionBlock==null)?null:lastCommittedTransactionBlock.getHash();
+
+            List<Transaction> transactionList = null;
+
+            if(prepare.getLastCommittedTransactionBlockId() > lastCommittedTransactionBlockId) {
+                log.info("Rejecting, transactionBlock = {}, latest = {}", lastCommittedTransactionBlockId, prepare.getLastCommittedTransactionBlockId());
+            }
+            else{
+                transactionList = transactionRepository.findAll(Sort.by(Sort.Direction.ASC, "id"));
+            }
+
+
             // To load all the transactions that haven't yet been commited and are lying in the local log
             // to be sent to the leader
-            List<Transaction> transactionList = transactionRepository.findAll(Sort.by(Sort.Direction.ASC, "id"));
-
-            TransactionBlock lastSavedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
 
             com.lab.paxos.networkObjects.acknowledgements.Promise promise = com.lab.paxos.networkObjects.acknowledgements.Promise.builder()
                     .ballotNumber(prepare.getBallotNumber())
                     .transactions(transactionList)
-                    .hashPreviousCommittedBlock((lastSavedTransactionBlock!=null)?lastSavedTransactionBlock.getHash():null)
                     .acceptNum(paxosService.getAcceptNum())
                     .previousTransactionBlock(paxosService.getPreviousTransactionBlock())
+                    .lastCommittedTransactionBlockId(lastCommittedTransactionBlockId)
+                    .lastCommittedTransactionBlockHash(lastCommittedTransactionBlockHash)
                     .build();
 
             AckMessageWrapper ackMessageWrapper = AckMessageWrapper.builder()

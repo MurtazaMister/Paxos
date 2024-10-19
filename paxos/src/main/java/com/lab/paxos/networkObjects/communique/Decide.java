@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -18,4 +19,10 @@ public class Decide implements Serializable {
     private int ballotNumber;
 
     private TransactionBlock transactionBlock;
+
+    private Long lastCommittedTransactionBlockId;
+
+    private String lastCommittedTransactionBlockHash;
+
+    private List<Integer> listNodesWithLatestLog;
 }

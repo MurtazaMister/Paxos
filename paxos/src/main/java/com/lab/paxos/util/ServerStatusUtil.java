@@ -126,6 +126,9 @@ public class ServerStatusUtil {
         if(!portStatusArray.get(activeId)){
             apiService.failServer(activeSocketPort, failUrl);
         }
+        else{
+            apiService.resumeServer(activeSocketPort, resumeUrl);
+        }
 
         log.warn("Setting server statuses, true = active, false = fail");
         log.warn("{}",portsArray);

@@ -44,16 +44,23 @@ public class Decide {
     @Lazy
     private TransactionRepository transactionRepository;
 
-    public void decide(int assignedPort, int ballotNumber, TransactionBlock transactionBlock) {
+    public void decide(int assignedPort, int ballotNumber, TransactionBlock transactionBlock, List<Integer> listNodesWithLatestLog) {
         List<Integer> portsArray = portUtil.portPoolGenerator();
         LocalDateTime startTime = LocalDateTime.now();
 
         log.info("Sending decide message and then performing transactions");
 
+        TransactionBlock lastCommittedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
+        Long lastCommittedTransactionBlockId = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getIdx():0;
+        String lastCommittedTransactionBlockHash = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getHash():null;
+
         try {
             com.lab.paxos.networkObjects.communique.Decide decide = com.lab.paxos.networkObjects.communique.Decide.builder()
                     .ballotNumber(ballotNumber)
                     .transactionBlock(transactionBlock)
+                    .lastCommittedTransactionBlockId(lastCommittedTransactionBlockId)
+                    .lastCommittedTransactionBlockHash(lastCommittedTransactionBlockHash)
+                    .listNodesWithLatestLog(listNodesWithLatestLog)
                     .build();
 
             log.info("Decide message: {}", decide);
@@ -71,9 +78,20 @@ public class Decide {
                 LocalDateTime currentTime = LocalDateTime.now();
                 log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Decide"));
 
+                int currentClientId = assignedPort - portsArray.get(0) + 1;
+                List<Transaction> toDelete = transactionBlock.getTransactions()
+                        .stream()
+                        .filter(transaction -> {
+                            return transaction.getSenderId() == currentClientId;
+                        })
+                        .toList();
+
+                if(!toDelete.isEmpty()){
+                    transactionRepository.deleteAll(toDelete);
+                }
+
                 // CODE TO COMMIT BLOCK ON THIS SERVER
 
-                int currentClientId = assignedPort - portsArray.get(0) + 1;
                 int updatedRows = 0;
 
                 for(Transaction transaction : transactionBlock.getTransactions()){
@@ -85,17 +103,6 @@ public class Decide {
                 }
 
                 transactionBlockRepository.save(transactionBlock);
-
-                List<Transaction> toDelete = transactionBlock.getTransactions()
-                        .stream()
-                        .filter(transaction -> {
-                            return transaction.getSenderId() == currentClientId;
-                        })
-                        .toList();
-
-                if(!toDelete.isEmpty()){
-                    transactionRepository.deleteAll(toDelete);
-                }
 
             }
             catch (InterruptedException | ExecutionException e) {

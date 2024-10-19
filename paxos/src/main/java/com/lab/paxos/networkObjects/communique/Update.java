@@ -14,7 +14,7 @@ import java.io.Serializable;
 public class Update implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    // (startId, LongId]
+    // (startId, endId]
 
     private Long startId; // Value until which the sender has blocks
     // Start from startId + 1

@@ -8,6 +8,7 @@ import com.lab.paxos.repository.TransactionBlockRepository;
 import com.lab.paxos.repository.TransactionRepository;
 import com.lab.paxos.repository.UserAccountRepository;
 import com.lab.paxos.service.PaxosService;
+import com.lab.paxos.service.SocketService;
 import com.lab.paxos.util.PortUtil;
 import com.lab.paxos.util.Stopwatch;
 import com.lab.paxos.wrapper.AckMessageWrapper;
@@ -42,57 +43,57 @@ public class Commit {
     @Autowired
     @Lazy
     private TransactionRepository transactionRepository;
+    @Autowired
+    @Lazy
+    private SocketService socketService;
 
     @Transactional
     public void commit(int assignedPort, ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
         LocalDateTime startTime = LocalDateTime.now();
         Decide decide = socketMessageWrapper.getDecide();
 
-        log.info("Received decide: {}", decide);
+        TransactionBlock transactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
+        Long lastCommittedTransactionBlockId = (transactionBlock!=null)?transactionBlock.getIdx():0;
+        String lastCommittedTransactionBlockHash = (transactionBlock!=null)?transactionBlock.getHash():null;
 
-        TransactionBlock transactionBlock = decide.getTransactionBlock();
+        if(lastCommittedTransactionBlockId.equals(decide.getLastCommittedTransactionBlockId())) {
 
-        paxosService.setAcceptNum(null);
-        paxosService.setPreviousTransactionBlock(null);
+            log.info("Received decide: {}", decide);
 
-        List<Integer> portsArray = portUtil.portPoolGenerator();
-        int currentClientId = assignedPort - portsArray.get(0) + 1;
+            paxosService.setAcceptNum(null);
+            paxosService.setPreviousTransactionBlock(null);
 
-        int updatedRows = 0;
+            List<Integer> portsArray = portUtil.portPoolGenerator();
 
-        for(Transaction transaction : transactionBlock.getTransactions()) {
-            if(transaction.getSenderId() != currentClientId) {
-                updatedRows = userAccountRepository.performTransaction(transaction.getSenderId(), transaction.getReceiverId(), transaction.getAmount());
-            }
+            TransactionBlock newTransactionBlock = decide.getTransactionBlock();
+
+            newTransactionBlock = paxosService.saveTransactionsFromBlock(assignedPort, portsArray, newTransactionBlock);
+
+            com.lab.paxos.networkObjects.acknowledgements.Commit commit = com.lab.paxos.networkObjects.acknowledgements.Commit.builder()
+                    .committedTransactionBlock(newTransactionBlock.getHash())
+                    .ballotNumber(decide.getBallotNumber())
+                    .build();
+
+            AckMessageWrapper ackMessageWrapper = AckMessageWrapper.builder()
+                    .type(AckMessageWrapper.MessageType.COMMIT)
+                    .commit(commit)
+                    .fromPort(socketMessageWrapper.getToPort())
+                    .toPort(socketMessageWrapper.getFromPort())
+                    .build();
+
+            out.writeObject(ackMessageWrapper);
+            LocalDateTime currentTime = LocalDateTime.now();
+            log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Commit"));
+
+            log.info("Sent committed to server {}: {}", ackMessageWrapper.getToPort(), commit);
         }
+        else{
+            log.info("Rejecting from Commit as this server or the leader might be lagging, current transaction blk = {}, leader's = {}", lastCommittedTransactionBlockId, decide.getLastCommittedTransactionBlockId());
+            LocalDateTime currentTime = LocalDateTime.now();
+            log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Commit"));
 
-        transactionBlock = transactionBlockRepository.save(transactionBlock);
+//            paxosService.update(socketService.getAssignedPort(), lastCommittedTransactionBlockId, decide.getLastCommittedTransactionBlockId(), decide.getListNodesWithLatestLog());
 
-        com.lab.paxos.networkObjects.acknowledgements.Commit commit = com.lab.paxos.networkObjects.acknowledgements.Commit.builder()
-                .committedTransactionBlock(transactionBlock.getHash())
-                .ballotNumber(decide.getBallotNumber())
-                .build();
-
-        AckMessageWrapper ackMessageWrapper = AckMessageWrapper.builder()
-                .type(AckMessageWrapper.MessageType.COMMIT)
-                .commit(commit)
-                .fromPort(socketMessageWrapper.getToPort())
-                .toPort(socketMessageWrapper.getFromPort())
-                .build();
-
-        out.writeObject(ackMessageWrapper);
-        LocalDateTime currentTime = LocalDateTime.now();
-        log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Commit"));
-
-        log.info("Sent committed to server {}: {}", ackMessageWrapper.getToPort(), commit);
-
-        List<Transaction> toDelete = transactionBlock.getTransactions()
-                .stream()
-                .filter(transaction -> transaction.getSenderId() == currentClientId)
-                .toList();
-
-        if(!toDelete.isEmpty()){
-            transactionRepository.deleteAll(toDelete);
         }
     }
 

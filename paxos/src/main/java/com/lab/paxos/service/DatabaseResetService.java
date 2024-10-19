@@ -16,7 +16,7 @@ public class DatabaseResetService {
     @Autowired
     private ExitService exitService;
 
-    private String[] tables = {"transaction_block", "transaction"};
+    private String[] tables = {"transaction_block", "transaction", "transaction_block_seq"};
 
     @Transactional
     public void resetDatabase() {
@@ -28,6 +28,8 @@ public class DatabaseResetService {
         for (String table : tables) {
             jdbcTemplate.execute("TRUNCATE TABLE " + table);
         }
+
+        jdbcTemplate.execute("INSERT INTO TRANSACTION_BLOCK_SEQ(next_val) values(1);");
 
         // Reviving foreign key checks
         jdbcTemplate.execute("SET FOREIGN_KEY_CHECKS = 1;");

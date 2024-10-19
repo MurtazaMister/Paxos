@@ -1,7 +1,11 @@
 package com.lab.paxos.util.PaxosUtil;
 
+import com.lab.paxos.model.TransactionBlock;
 import com.lab.paxos.networkObjects.communique.Accept;
+import com.lab.paxos.repository.TransactionBlockRepository;
 import com.lab.paxos.service.PaxosService;
+import com.lab.paxos.service.SocketService;
+import com.lab.paxos.util.SocketMessageUtil;
 import com.lab.paxos.util.Stopwatch;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
@@ -22,6 +26,12 @@ public class Accepted {
     @Autowired
     @Lazy
     PaxosService paxosService;
+    @Autowired
+    @Lazy
+    private TransactionBlockRepository transactionBlockRepository;
+    @Autowired
+    @Lazy
+    private SocketService socketService;
 
     public void accepted(ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
         LocalDateTime startTime = LocalDateTime.now();
@@ -29,7 +39,11 @@ public class Accepted {
 
         log.info("Received from port {}: {}", socketMessageWrapper.getFromPort(), socketMessageWrapper.getAccept());
 
-        if(accept.getBallotNumber() >= paxosService.getBallotNumber()){
+        TransactionBlock transactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
+        Long lastCommittedTransactionBlockId = (transactionBlock!=null)?transactionBlock.getIdx():0;
+        String lastCommittedTransactionBlockHash = (transactionBlock!=null)?transactionBlock.getHash():null;
+
+        if(accept.getBallotNumber() >= paxosService.getBallotNumber() && lastCommittedTransactionBlockId.equals(accept.getLastCommittedTransactionBlockId())){
 
             paxosService.setBallotNumber(accept.getBallotNumber());
             paxosService.setLastBallotNumberUpdateTimestamp(System.currentTimeMillis());
@@ -59,9 +73,19 @@ public class Accepted {
             log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Accepted"));
         }
         else{
-            log.info("Rejecting due to smaller ballot number, current: {}, received: {}", paxosService.getBallotNumber(), accept.getBallotNumber());
-            LocalDateTime currentTime = LocalDateTime.now();
-            log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Accepted"));
+            if(accept.getBallotNumber() < paxosService.getBallotNumber()) {
+                log.info("Rejecting due to smaller ballot number, current: {}, received: {}", paxosService.getBallotNumber(), accept.getBallotNumber());
+                LocalDateTime currentTime = LocalDateTime.now();
+                log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Accepted"));
+
+//                paxosService.update(socketService.getAssignedPort(), lastCommittedTransactionBlockId, accept.getLastCommittedTransactionBlockId(), accept.getListNodesWithLatestLog());
+
+            }
+            else {
+                log.info("Rejecting from Accepted as this server or the leader might be lagging, current transaction blk = {}, leader's = {}", lastCommittedTransactionBlockId, accept.getLastCommittedTransactionBlockId());
+                LocalDateTime currentTime = LocalDateTime.now();
+                log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Accepted"));
+            }
         }
     }
 }

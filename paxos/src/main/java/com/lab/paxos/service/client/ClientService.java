@@ -185,7 +185,11 @@ public class ClientService {
                             break;
                         case "x":
                             if(parts.length > 1){
-                                csvFileService.readAndExecuteCsvFile(parts[1]);
+                                String filePath = "";
+                                for(int i = 1;i<parts.length;i++) {
+                                    filePath += parts[i] + " ";
+                                }
+                                csvFileService.readAndExecuteCsvFile(filePath.trim());
                             }
                             else{
                                 csvFileService.readAndExecuteCsvFile();

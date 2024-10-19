@@ -34,6 +34,10 @@ public class AckDisplayUtil {
                 log.info("Received ACK_SYNC from server {}: {}", ackMessageWrapper.getFromPort(), ackMessageWrapper.getAckSync());
                 break;
 
+            case ACK_UPDATE:
+                log.info("Received ACK_UPDATE from server {}: {}", ackMessageWrapper.getFromPort(), ackMessageWrapper.getAckUpdate());
+                break;
+
             default:
                 log.error("Received unexpected ACK from server {}", ackMessageWrapper);
         }

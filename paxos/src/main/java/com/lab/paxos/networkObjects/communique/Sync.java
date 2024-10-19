@@ -23,5 +23,5 @@ public class Sync implements Serializable{
 
     private String lastCommittedTransactionBlockHash;
 
-    List<Long> listNodesWithLatestLog;
+    private List<Integer> listNodesWithLatestLog;
 }

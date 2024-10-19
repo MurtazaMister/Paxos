@@ -92,13 +92,11 @@ public class SocketMessageUtil {
         return ackMessageWrapper;
     }
 
-    public CompletableFuture<List<AckMessageWrapper>> broadcast(SocketMessageWrapper socketMessageWrapper) throws IOException {
-
+    public CompletableFuture<List<AckMessageWrapper>> broadcast(SocketMessageWrapper socketMessageWrapper, List<Integer> PORT_POOL) throws IOException{
 //        if(serverStatusUtil.isFailed()){
 //            return CompletableFuture.failedFuture(new IOException("Server Unavailable"));
 //        }
 
-        List<Integer> PORT_POOL = portUtil.portPoolGenerator();
         int assignedPort = socketService.getAssignedPort();
 
         List<CompletableFuture<AckMessageWrapper>> futures = PORT_POOL.stream()
@@ -107,8 +105,7 @@ public class SocketMessageUtil {
                     try{
                         SocketMessageWrapper smw = SocketMessageWrapper.from(socketMessageWrapper);
                         smw.setToPort(port);
-                        AckMessageWrapper ackMessageWrapper = sendMessageToServer(port, smw);
-                        return ackMessageWrapper;
+                        return sendMessageToServer(port, smw);
                     }
                     catch(IOException e){
                         log.error("IOException {}: {}", port, e.getMessage());
@@ -119,14 +116,20 @@ public class SocketMessageUtil {
                         return null;
                     }
                 }))
-                .collect(Collectors.toList());
+                .toList();
 
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                 .thenApply(v -> futures.stream()
-                .map(CompletableFuture::join)
-                .filter(ack -> ack!=null)
-                .collect(Collectors.toList()));
+                        .map(CompletableFuture::join)
+                        .filter(ack -> ack!=null)
+                        .collect(Collectors.toList()));
 
+
+    }
+
+    public CompletableFuture<List<AckMessageWrapper>> broadcast(SocketMessageWrapper socketMessageWrapper) throws IOException {
+        List<Integer> PORT_POOL = portUtil.portPoolGenerator();
+        return broadcast(socketMessageWrapper, PORT_POOL);
     }
 
     public void listenForIncomingMessages(@NotNull ServerSocket serverSocket) {
@@ -233,6 +236,16 @@ public class SocketMessageUtil {
                         if(serverStatusUtil.isFailed()) return;
                         paxosService.commit(socketService.getAssignedPort(), in, out, message);
                         out.flush();
+                        break;
+
+                    case SYNC:
+                        if(serverStatusUtil.isFailed()) return;
+                        paxosService.ackSync(socketService.getAssignedPort(), in, out, message);
+                        break;
+
+                    case UPDATE:
+                        if(serverStatusUtil.isFailed()) return;
+                        paxosService.ackUpdate(socketService.getAssignedPort(), in, out, message);
                         break;
                 }
             }

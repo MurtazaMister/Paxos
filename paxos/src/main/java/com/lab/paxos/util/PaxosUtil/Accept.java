@@ -2,6 +2,7 @@ package com.lab.paxos.util.PaxosUtil;
 
 import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.TransactionBlock;
+import com.lab.paxos.repository.TransactionBlockRepository;
 import com.lab.paxos.repository.TransactionRepository;
 import com.lab.paxos.service.PaxosService;
 import com.lab.paxos.util.SocketMessageUtil;
@@ -39,14 +40,11 @@ public class Accept {
     private int prepareDelay;
     @Value("${paxos.prepare.range}")
     private int prepareDelayRange;
+    @Autowired
+    @Lazy
+    private TransactionBlockRepository transactionBlockRepository;
 
-    public void accept(int assignedPort, int ballotNumber, List<AckMessageWrapper> promiseAckMessageWrapperList){
-        // If any transaction blocks are received
-            // Check for all the transaction blocks within the acknowledgements
-            // and with the current server, compare the ballot numbers
-        // else create a transaction block from all the transactions that have been received and collect votes
-
-        // HANDLE SOMETHING ABOUT LAST COMMITTED TRANSACTION BLOCK HASH
+    public void accept(int assignedPort, int ballotNumber, List<AckMessageWrapper> promiseAckMessageWrapperList, List<Integer> listNodesWithLatestLog){
 
         LocalDateTime startTime = LocalDateTime.now();
 
@@ -68,8 +66,15 @@ public class Accept {
                 }
             }
 
+            TransactionBlock lastCommittedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
+            Long lastCommittedTransactionBlockId = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getIdx():0;
+            String lastCommittedTransactionBlockHash = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getHash():null;
+
             com.lab.paxos.networkObjects.communique.Accept accept = com.lab.paxos.networkObjects.communique.Accept.builder()
                     .ballotNumber(ballotNumber)
+                    .lastCommittedTransactionBlockId(lastCommittedTransactionBlockId)
+                    .lastCommittedTransactionBlockHash(lastCommittedTransactionBlockHash)
+                    .listNodesWithLatestLog(listNodesWithLatestLog)
                     .build();
 
             String hash;
@@ -129,7 +134,7 @@ public class Accept {
 
                 if(count >= serverPopulation/2){
                     log.info("Moving on to decide phase");
-                    paxosService.decide(assignedPort, ballotNumber, accept.getBlock());
+                    paxosService.decide(assignedPort, ballotNumber, accept.getBlock(), listNodesWithLatestLog);
                 }
                 else{
                     // Restart paxos with a higher ballot number
