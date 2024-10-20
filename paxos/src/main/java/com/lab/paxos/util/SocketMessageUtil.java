@@ -41,6 +41,7 @@ public class SocketMessageUtil {
     SocketConfig socketConfig;
 
     @Autowired
+    @Lazy
     PaxosService paxosService;
 
     @Autowired

@@ -117,7 +117,7 @@ public class CsvFileService {
                         currentTransaction.getAmount(),
                         url);
 
-                log.info("Set {}: Executing transaction - {}:{}->{}", currentSetNumber, sender_name, receiver_name, currentTransaction.getAmount());
+                log.info("Set {}: Executing transaction - {}:{}->{}", currentSetNumber, currentTransaction.getAmount(), sender_name, receiver_name);
 
                 futureTransaction.thenAccept(transaction -> {if(transaction!=null) log.info("Transaction executed: {}", transaction); else log.error("Transaction failed");});
 

@@ -6,6 +6,8 @@ import com.lab.paxos.repository.TransactionBlockRepository;
 import com.lab.paxos.service.PaxosService;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -26,6 +28,8 @@ public class AckUpdate {
     @Autowired
     @Lazy
     private TransactionBlockRepository transactionBlockRepository;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public void ackUpdate(int assignedPort, ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
         Update update = socketMessageWrapper.getUpdate();
@@ -34,10 +38,13 @@ public class AckUpdate {
         String highestCommittedTransactionBlockHash = update.getHighestCommittedTransactionBlockHash();
 
         TransactionBlock transactionBlock = transactionBlockRepository.findIdByHash(lastCommittedTransactionBlockHash);
+        entityManager.clear();
 
         long startId = (transactionBlock!=null)? transactionBlock.getIdx() : 0;
 
         transactionBlock = transactionBlockRepository.findIdByHash(highestCommittedTransactionBlockHash);
+        entityManager.clear();
+
         long endId = (transactionBlock!=null)?transactionBlock.getIdx():0;
 
         List<TransactionBlock> transactionBlockList = new ArrayList<>();
@@ -60,6 +67,6 @@ public class AckUpdate {
 
         out.writeObject(ackMessageWrapper);
 
-        log.info("Sent catch-up transaction blocks to server {} from server {}", socketMessageWrapper.getFromPort(), assignedPort);
+        log.info("Sent catch-up transaction blocks to server {} from server {}, startId {} to endId {}", socketMessageWrapper.getFromPort(), assignedPort, startId, endId);
     }
 }

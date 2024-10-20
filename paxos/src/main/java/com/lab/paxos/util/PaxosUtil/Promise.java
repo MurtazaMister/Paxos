@@ -2,13 +2,10 @@ package com.lab.paxos.util.PaxosUtil;
 
 import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.TransactionBlock;
-import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
 import com.lab.paxos.networkObjects.communique.Prepare;
 import com.lab.paxos.repository.TransactionBlockRepository;
 import com.lab.paxos.repository.TransactionRepository;
 import com.lab.paxos.service.PaxosService;
-import com.lab.paxos.service.SocketService;
-import com.lab.paxos.util.SocketMessageUtil;
 import com.lab.paxos.util.Stopwatch;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
@@ -22,7 +19,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -51,7 +47,7 @@ public class Promise {
             paxosService.setLastBallotNumberUpdateTimestamp(System.currentTimeMillis());
 
             TransactionBlock lastCommittedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-            Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
+            Long lastCommittedTransactionBlockId = transactionBlockRepository.countTransactionBlocks();
             String lastCommittedTransactionBlockHash = (lastCommittedTransactionBlock==null)?null:lastCommittedTransactionBlock.getHash();
 
             List<Transaction> transactionList = null;

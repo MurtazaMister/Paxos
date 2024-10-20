@@ -5,7 +5,6 @@ import com.lab.paxos.networkObjects.communique.Accept;
 import com.lab.paxos.repository.TransactionBlockRepository;
 import com.lab.paxos.service.PaxosService;
 import com.lab.paxos.service.SocketService;
-import com.lab.paxos.util.SocketMessageUtil;
 import com.lab.paxos.util.Stopwatch;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
@@ -33,6 +32,7 @@ public class Accepted {
     @Lazy
     private SocketService socketService;
 
+
     public void accepted(ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
         LocalDateTime startTime = LocalDateTime.now();
         Accept accept = socketMessageWrapper.getAccept();
@@ -40,7 +40,7 @@ public class Accepted {
         log.info("Received from port {}: {}", socketMessageWrapper.getFromPort(), socketMessageWrapper.getAccept());
 
         TransactionBlock transactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-        Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
+        Long lastCommittedTransactionBlockId = transactionBlockRepository.countTransactionBlocks();
         String lastCommittedTransactionBlockHash = (transactionBlock!=null)?transactionBlock.getHash():null;
 
         if(accept.getBallotNumber() >= paxosService.getBallotNumber() && lastCommittedTransactionBlockId.equals(accept.getLastCommittedTransactionBlockId())){

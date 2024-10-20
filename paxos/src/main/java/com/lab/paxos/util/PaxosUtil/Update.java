@@ -73,12 +73,12 @@ public class Update {
         List<TransactionBlock> blocks = ackMessageWrapper.getAckUpdate().getBlocks();
 
         for(TransactionBlock transactionBlock : blocks){
-            TransactionBlock retrieved = transactionBlockRepository.findByHash(transactionBlock.getHash()).orElse(null);
-            if(retrieved == null) {
-                transactionBlock.setIdx(null);
-                transactionBlock.setHash(null);
+//            TransactionBlock retrieved = transactionBlockRepository.findByHash(transactionBlock.getHash()).orElse(null);
+//            if(retrieved == null) {
+//                transactionBlock.setIdx(null);
+            log.info("Calling saveTransactionsFromBlock() from Update for {}", transactionBlock.getHash());
                 paxosService.saveTransactionsFromBlock(assignedPort, portsArray, transactionBlock);
-            }
+//            }
         }
 
     }

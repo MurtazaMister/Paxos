@@ -1,6 +1,5 @@
 package com.lab.paxos.util.PaxosUtil;
 
-import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.TransactionBlock;
 import com.lab.paxos.repository.TransactionBlockRepository;
 import com.lab.paxos.repository.TransactionRepository;
@@ -11,6 +10,8 @@ import com.lab.paxos.util.SocketMessageUtil;
 import com.lab.paxos.util.Stopwatch;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -43,6 +44,8 @@ public class Decide {
     @Autowired
     @Lazy
     private TransactionRepository transactionRepository;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public void decide(int assignedPort, int ballotNumber, TransactionBlock transactionBlock, List<Integer> listNodesWithLatestLog) {
         List<Integer> portsArray = portUtil.portPoolGenerator();
@@ -51,8 +54,10 @@ public class Decide {
         log.info("Sending decide message and then performing transactions");
 
         TransactionBlock lastCommittedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-        Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
+        Long lastCommittedTransactionBlockId = transactionBlockRepository.countTransactionBlocks();
         String lastCommittedTransactionBlockHash = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getHash():null;
+
+        entityManager.clear();
 
         try {
             com.lab.paxos.networkObjects.communique.Decide decide = com.lab.paxos.networkObjects.communique.Decide.builder()
@@ -78,32 +83,8 @@ public class Decide {
                 LocalDateTime currentTime = LocalDateTime.now();
                 log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Decide"));
 
-                int currentClientId = assignedPort - portsArray.get(0) + 1;
-                List<Transaction> toDelete = transactionBlock.getTransactions()
-                        .stream()
-                        .filter(transaction -> {
-                            return transaction.getSenderId() == currentClientId;
-                        })
-                        .toList();
-
-                if(!toDelete.isEmpty()){
-                    transactionRepository.deleteAll(toDelete);
-                }
-
-                // CODE TO COMMIT BLOCK ON THIS SERVER
-
-                int updatedRows = 0;
-
-                for(Transaction transaction : transactionBlock.getTransactions()){
-
-                    if(transaction.getSenderId() != currentClientId) {
-                         updatedRows = userAccountRepository.performTransaction(transaction.getSenderId(), transaction.getReceiverId(), transaction.getAmount());
-                    }
-
-                }
-
-                transactionBlockRepository.save(transactionBlock);
-
+                log.info("Calling saveTransactionsFromBlock() from Decide for {}", transactionBlock.calculateHash());
+                paxosService.saveTransactionsFromBlock(assignedPort, portsArray, transactionBlock);
             }
             catch (InterruptedException | ExecutionException e) {
                 log.error("Error while broadcasting messages: {}", e.getMessage());

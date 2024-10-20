@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -31,6 +32,7 @@ public class SocketService {
     private PortUtil portUtil;
 
     @Autowired
+    @Lazy
     private SocketMessageUtil socketMessageUtil;
 
     @Autowired

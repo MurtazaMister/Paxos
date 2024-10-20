@@ -9,6 +9,8 @@ import com.lab.paxos.util.SocketMessageUtil;
 import com.lab.paxos.util.Stopwatch;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,6 +46,9 @@ public class Accept {
     @Lazy
     private TransactionBlockRepository transactionBlockRepository;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     public void accept(int assignedPort, int ballotNumber, List<AckMessageWrapper> promiseAckMessageWrapperList, List<Integer> listNodesWithLatestLog){
 
         LocalDateTime startTime = LocalDateTime.now();
@@ -67,8 +72,10 @@ public class Accept {
             }
 
             TransactionBlock lastCommittedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-            Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
+            Long lastCommittedTransactionBlockId = transactionBlockRepository.countTransactionBlocks();
             String lastCommittedTransactionBlockHash = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getHash():null;
+
+            entityManager.clear();
 
             com.lab.paxos.networkObjects.communique.Accept accept = com.lab.paxos.networkObjects.communique.Accept.builder()
                     .ballotNumber(ballotNumber)

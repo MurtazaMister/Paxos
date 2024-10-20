@@ -14,11 +14,15 @@ import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.SQLTransientException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -47,6 +51,10 @@ public class TransactionController {
     @Value("${paxos.prepare.range}")
     private int prepareDelayRange;
     private int rounds = 0;
+    @Value("${server.deadlock.delay}")
+    private int serverDeadlockDelay;
+    @Value("${server.deadlock.delay.range}")
+    private int serverDeadlockDelayRange;
 
 //    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -88,8 +96,22 @@ public class TransactionController {
                 // If this transaction belongs to this server's client
                 // i.e. port matches client id
 
-                int updatedRows = 0;
-                updatedRows = userAccountRepository.performTransaction(sender.getId(), receiver.getId(), transactionDTO.getAmount());
+                Integer updatedRows = null;
+
+                while(updatedRows == null) {
+                    try{
+                        updatedRows = userAccountRepository.performTransaction(sender.getId(), receiver.getId(), transactionDTO.getAmount());
+                    } catch (PessimisticLockingFailureException e) {
+                        log.error("Encountered deadlock, restarting transaction after random delay");
+
+                        try {
+                            Stopwatch.randomSleep(serverDeadlockDelay-serverDeadlockDelayRange,serverDeadlockDelay+serverDeadlockDelayRange);
+                        } catch (InterruptedException ie) {
+                            log.error("Transaction thread interrupted: {}", ie.getMessage());
+                        }
+                    }
+                }
+
                 log.info("Updated rows: {}", updatedRows);
                 log.info("For transaction - {} : {} -> {}", transactionDTO.getAmount(), sender.getId(), receiver.getId());
                 if(updatedRows != 0) {

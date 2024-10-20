@@ -8,6 +8,8 @@ import com.lab.paxos.util.SocketMessageUtil;
 import com.lab.paxos.util.Stopwatch;
 import com.lab.paxos.wrapper.AckMessageWrapper;
 import com.lab.paxos.wrapper.SocketMessageWrapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +45,8 @@ public class Prepare {
     @Autowired
     @Lazy
     private TransactionRepository transactionRepository;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public void prepare(int assignedPort) {
         LocalDateTime startTime = LocalDateTime.now();
@@ -60,14 +64,18 @@ public class Prepare {
         paxosService.setBallotNumber(ballotNumber);
         try{
             TransactionBlock lastCommittedTransactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-            Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
+            Long lastCommittedTransactionBlockId = transactionBlockRepository.countTransactionBlocks();
             String lastCommittedTransactionBlockHash = (lastCommittedTransactionBlock!=null)?lastCommittedTransactionBlock.getHash():null;
+
+            entityManager.clear();
 
             com.lab.paxos.networkObjects.communique.Prepare prepare = com.lab.paxos.networkObjects.communique.Prepare.builder()
                     .ballotNumber(ballotNumber)
                     .lastCommittedTransactionBlockId(lastCommittedTransactionBlockId)
                     .lastCommittedTransactionBlockHash(lastCommittedTransactionBlockHash)
                     .build();
+
+            log.info("Sending prepare message: {}", prepare);
 
             SocketMessageWrapper socketMessageWrapper = SocketMessageWrapper.builder()
                     .type(SocketMessageWrapper.MessageType.PREPARE)

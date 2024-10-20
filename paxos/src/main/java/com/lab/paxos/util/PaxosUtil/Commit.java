@@ -1,8 +1,6 @@
 package com.lab.paxos.util.PaxosUtil;
 
-import com.lab.paxos.model.Transaction;
 import com.lab.paxos.model.TransactionBlock;
-import com.lab.paxos.networkObjects.acknowledgements.AckMessage;
 import com.lab.paxos.networkObjects.communique.Decide;
 import com.lab.paxos.repository.TransactionBlockRepository;
 import com.lab.paxos.repository.TransactionRepository;
@@ -47,26 +45,28 @@ public class Commit {
     @Lazy
     private SocketService socketService;
 
+
     @Transactional
     public void commit(int assignedPort, ObjectInputStream in, ObjectOutputStream out, SocketMessageWrapper socketMessageWrapper) throws IOException {
         LocalDateTime startTime = LocalDateTime.now();
         Decide decide = socketMessageWrapper.getDecide();
 
         TransactionBlock transactionBlock = transactionBlockRepository.findTopByOrderByIdxDesc();
-        Long lastCommittedTransactionBlockId = transactionBlockRepository.count();
+        Long lastCommittedTransactionBlockId = transactionBlockRepository.countTransactionBlocks();
         String lastCommittedTransactionBlockHash = (transactionBlock!=null)?transactionBlock.getHash():null;
+
+        paxosService.setAcceptNum(null);
+        paxosService.setPreviousTransactionBlock(null);
 
         if(lastCommittedTransactionBlockId.equals(decide.getLastCommittedTransactionBlockId())) {
 
             log.info("Received decide: {}", decide);
 
-            paxosService.setAcceptNum(null);
-            paxosService.setPreviousTransactionBlock(null);
-
             List<Integer> portsArray = portUtil.portPoolGenerator();
 
             TransactionBlock newTransactionBlock = decide.getTransactionBlock();
 
+            log.info("Calling saveTransactionsFromBlock() from Commit for {}", newTransactionBlock.calculateHash());
             newTransactionBlock = paxosService.saveTransactionsFromBlock(assignedPort, portsArray, newTransactionBlock);
 
             com.lab.paxos.networkObjects.acknowledgements.Commit commit = com.lab.paxos.networkObjects.acknowledgements.Commit.builder()
