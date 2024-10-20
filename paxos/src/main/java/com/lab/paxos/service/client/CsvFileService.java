@@ -1,6 +1,7 @@
 package com.lab.paxos.service.client;
 
 import com.lab.paxos.model.Transaction;
+import com.lab.paxos.model.TransactionBlock;
 import com.lab.paxos.service.ExitService;
 import com.lab.paxos.util.ParseUtil;
 import com.lab.paxos.util.PortUtil;
@@ -137,8 +138,8 @@ public class CsvFileService {
             String input;
             while(true){
                 if(cont || exit) break;
+                System.out.println("Enter commands for user "+clientService.getUsername());
                 System.out.println("""
-                        Enter commands:
                         - printBalance <username (optional)> # Gets the balance of the client = {username} from its own server
                         - printLog <username (optional)> # Gets the logs of the server handling client = {username}
                         - printDB <username (optional)> # Gets the db at the server handling client = {username}
@@ -164,15 +165,50 @@ public class CsvFileService {
                             }
                             break;
                         case "printLog":
+                            List<Transaction> transactions;
+                            if(parts.length == 1){
+                                transactions = apiService.printLocalLog(clientService.getUsername());
+                            }
+                            else if(parts.length == 2){
+                                transactions = apiService.printLocalLog(parts[1]);
+                            }
+                            else{
+                                log.warn("Invalid command or username");
+                                break;
+                            }
 
-                            log.warn("In progress");
+                            if(!transactions.isEmpty()){
+                                printTransactions(transactions);
+                            } else {
+                                log.info("Empty local log");
+                            }
 
                             break;
                         case "printDB":
 
-                            log.warn("In progress");
+                            List<TransactionBlock> transactionBlocks;
+                            if(parts.length == 1){
+                                transactionBlocks = apiService.printDB(clientService.getUsername());
+                            }
+                            else if(parts.length == 2){
+                                transactionBlocks = apiService.printDB(parts[1]);
+                            }
+                            else{
+                                log.warn("Invalid command or username");
+                                break;
+                            }
+
+                            if(!transactionBlocks.isEmpty()){
+                                for(TransactionBlock transactionBlock : transactionBlocks){
+                                    System.out.println("Block id: "+ transactionBlock.getIdx());
+                                    printTransactions(transactionBlock.getTransactions());
+                                }
+                            } else {
+                                log.info("Empty DB");
+                            }
 
                             break;
+
                         case "performance":
 
                             log.warn("In progress");
@@ -209,6 +245,12 @@ public class CsvFileService {
         }
         catch (NumberFormatException e){
             return null;
+        }
+    }
+
+    public void printTransactions(List<Transaction> transactions){
+        for(Transaction transaction : transactions){
+            System.out.printf("$%d : %d -> %d\n", transaction.getAmount(), transaction.getSenderId(), transaction.getReceiverId());
         }
     }
 }

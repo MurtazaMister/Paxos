@@ -2,7 +2,9 @@ package com.lab.paxos.controller;
 
 import com.lab.paxos.dto.TransactionDTO;
 import com.lab.paxos.model.Transaction;
+import com.lab.paxos.model.TransactionBlock;
 import com.lab.paxos.model.UserAccount;
+import com.lab.paxos.repository.TransactionBlockRepository;
 import com.lab.paxos.repository.TransactionRepository;
 import com.lab.paxos.repository.UserAccountRepository;
 import com.lab.paxos.service.PaxosService;
@@ -14,6 +16,7 @@ import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.sql.SQLTransientException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -55,6 +59,9 @@ public class TransactionController {
     private int serverDeadlockDelay;
     @Value("${server.deadlock.delay.range}")
     private int serverDeadlockDelayRange;
+    @Autowired
+    @Lazy
+    private TransactionBlockRepository transactionBlockRepository;
 
 //    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -158,6 +165,20 @@ public class TransactionController {
             return ResponseEntity.notFound().build();
         }
 
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Transaction>> getLocalTransactions(){
+        List<Transaction> transactions = transactionRepository.findAllByOrderByIdAsc();
+
+        return ResponseEntity.ok(transactions);
+    }
+
+    @GetMapping("/blocks")
+    public ResponseEntity<List<TransactionBlock>> getDB(){
+        List<TransactionBlock> transactionBlocks = transactionBlockRepository.findAllByOrderByIdxAsc();
+
+        return ResponseEntity.ok(transactionBlocks);
     }
 
 //    @PreDestroy

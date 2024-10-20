@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface TransactionBlockRepository extends JpaRepository<TransactionBlock, Long> {
@@ -23,4 +24,6 @@ public interface TransactionBlockRepository extends JpaRepository<TransactionBlo
     Long countTransactionBlocks();
 
     Long countByHash(String hash);
+
+    List<TransactionBlock> findAllByOrderByIdxAsc();
 }

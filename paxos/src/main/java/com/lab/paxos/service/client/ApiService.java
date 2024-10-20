@@ -4,6 +4,7 @@ import com.lab.paxos.config.client.ApiConfig;
 import com.lab.paxos.dto.TransactionDTO;
 import com.lab.paxos.dto.ValidateUserDTO;
 import com.lab.paxos.model.Transaction;
+import com.lab.paxos.model.TransactionBlock;
 import com.lab.paxos.model.UserAccount;
 import com.lab.paxos.service.ExitService;
 import com.lab.paxos.util.PortUtil;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -233,5 +235,91 @@ public class ApiService {
     public CompletableFuture<Transaction> asyncTransact(String sName, String rName, Long amount, String url){
         return CompletableFuture.supplyAsync(() -> transact(sName, rName, amount, url), executorService)
                 .thenApplyAsync(transaction -> transaction);
+    }
+
+    public List<Transaction> printLocalLog(String username, String url){
+        log.info("Sending req: {}", url);
+
+        List<Transaction> transactions = null;
+
+        try{
+            transactions = restTemplate.exchange(UriComponentsBuilder.fromHttpUrl(url)
+                    .toUriString(), HttpMethod.GET, null, new ParameterizedTypeReference<List<Transaction>>() {}
+            ).getBody();
+            return transactions;
+        }
+        catch (HttpServerErrorException e) {
+            if(e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
+                log.error("Service unavailable : {}", e.getMessage());
+            } else {
+                log.error("Server error: {}", e.getMessage());
+            }
+        }
+        catch (HttpClientErrorException e) {
+            log.error("Http error while fetching balance: {}", e.getStatusCode());
+        }
+        catch (ResourceAccessException e) {
+            log.error("Could not access server: {}", e.getMessage());
+        }
+        catch (Exception e) {
+            log.error("{}", e.getMessage());
+        }
+
+        return null;
+    }
+
+    public List<Transaction> printLocalLog(String username){
+        Long id = (username.equals(clientService.getUsername()))?clientService.getUserId():clientService.getId(username);
+
+        List<Integer> portsArray = portUtil.portPoolGenerator();
+
+        int respectivePort = portsArray.get(0) + Integer.parseInt(offset) + Math.toIntExact(id) - 1;
+
+        String url = restServerUrl+":"+respectivePort+"/transaction";
+
+        return printLocalLog(username, url);
+    }
+
+    public List<TransactionBlock> printDB(String username, String url){
+        log.info("Sending req: {}", url);
+
+        List<TransactionBlock> transactionBlocks = null;
+
+        try{
+            transactionBlocks = restTemplate.exchange(UriComponentsBuilder.fromHttpUrl(url)
+                    .toUriString(), HttpMethod.GET, null, new ParameterizedTypeReference<List<TransactionBlock>>() {}
+            ).getBody();
+            return transactionBlocks;
+        }
+        catch (HttpServerErrorException e) {
+            if(e.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE){
+                log.error("Service unavailable : {}", e.getMessage());
+            } else {
+                log.error("Server error: {}", e.getMessage());
+            }
+        }
+        catch (HttpClientErrorException e) {
+            log.error("Http error while fetching balance: {}", e.getStatusCode());
+        }
+        catch (ResourceAccessException e) {
+            log.error("Could not access server: {}", e.getMessage());
+        }
+        catch (Exception e) {
+            log.error("{}", e.getMessage());
+        }
+
+        return null;
+    }
+
+    public List<TransactionBlock> printDB(String username){
+        Long id = (username.equals(clientService.getUsername()))?clientService.getUserId():clientService.getId(username);
+
+        List<Integer> portsArray = portUtil.portPoolGenerator();
+
+        int respectivePort = portsArray.get(0) + Integer.parseInt(offset) + Math.toIntExact(id) - 1;
+
+        String url = restServerUrl+":"+respectivePort+"/transaction/blocks";
+
+        return printDB(username, url);
     }
 }
