@@ -6,6 +6,7 @@ import com.lab.paxos.service.ExitService;
 import com.lab.paxos.util.PortUtil;
 import com.lab.paxos.util.ServerStatusUtil;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ import java.util.List;
 @Service
 @Slf4j
 @Getter
+@Setter
 public class ClientService {
 
     @Autowired
@@ -36,6 +38,8 @@ public class ClientService {
     private Long userId;
     private String username;
     private ApiConfig apiConfig;
+    private double countOfTransactionsExecuted = 0;
+    private double totalTimeInProcessingTransactions = 0;
     @Autowired
     private ApiService apiService;
 

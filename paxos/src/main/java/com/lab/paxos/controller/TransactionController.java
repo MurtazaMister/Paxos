@@ -86,8 +86,6 @@ public class TransactionController {
     @Transactional
     public ResponseEntity<Transaction> processTransaction(@RequestBody TransactionDTO transactionDTO) {
 
-//        if(serverStatusUtil.isFailed()) return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-
         Optional<UserAccount> optionalSender = userAccountRepository.findByUsername(transactionDTO.getUnameSender());
         Optional<UserAccount> optionalReceiver = userAccountRepository.findByUsername(transactionDTO.getUnameReceiver());
 

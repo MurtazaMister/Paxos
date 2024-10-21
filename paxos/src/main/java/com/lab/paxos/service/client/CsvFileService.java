@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,10 +99,7 @@ public class CsvFileService {
                     currentTransaction = parseUtil.parseTransaction(record.get(1));
                     activeServerIds = parseUtil.parseActiveServerList(record.get(2));
 
-//                    LocalDateTime startTime = LocalDateTime.now();
                     serverStatusUtil.setServerStatuses(activeServerIds);
-//                    LocalDateTime currentTime = LocalDateTime.now();
-//                    log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Server status reset"));
 
                 }
                 else {
@@ -113,6 +111,8 @@ public class CsvFileService {
                 sender_name = (char)(baseUname + currentTransaction.getSenderId() - 1);
                 receiver_name = (char)(baseUname + currentTransaction.getReceiverId() - 1);
 
+                LocalDateTime startTime = LocalDateTime.now();
+
                 CompletableFuture<Transaction> futureTransaction = apiService.asyncTransact(Character.toString(sender_name),
                         Character.toString(receiver_name),
                         currentTransaction.getAmount(),
@@ -120,7 +120,16 @@ public class CsvFileService {
 
                 log.info("Set {}: Executing transaction - {}:{}->{}", currentSetNumber, currentTransaction.getAmount(), sender_name, receiver_name);
 
-                futureTransaction.thenAccept(transaction -> {if(transaction!=null) log.info("Transaction executed: {}", transaction); else log.error("Transaction failed");});
+                futureTransaction.thenAccept(transaction -> {
+                    LocalDateTime currentTime = LocalDateTime.now();
+                    if(transaction!=null) {
+                        clientService.setCountOfTransactionsExecuted(clientService.getCountOfTransactionsExecuted()+1);
+                        clientService.setTotalTimeInProcessingTransactions(clientService.getTotalTimeInProcessingTransactions()+(Duration.between(startTime, currentTime).toNanos()/1000000000.0));
+                        log.info("{}", Stopwatch.getDuration(startTime, currentTime, "Transaction $"+transaction.getAmount()+" : "+transaction.getSenderId()+" -> "+transaction.getReceiverId()+" executed in"));
+                    }
+                    else
+                        log.error("Transaction failed");
+                });
 
             }
         }
@@ -211,7 +220,8 @@ public class CsvFileService {
 
                         case "performance":
 
-                            log.warn("In progress");
+                            System.out.println("Average latency: "+Math.round((100.0*clientService.getTotalTimeInProcessingTransactions())/clientService.getCountOfTransactionsExecuted())/100.0+" seconds per transaction");
+                            System.out.println("Average throughput: "+Math.round((100.0*clientService.getCountOfTransactionsExecuted())/clientService.getTotalTimeInProcessingTransactions())/100.0+" transactions per second");
 
                             break;
                         case "continue":

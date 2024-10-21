@@ -13,7 +13,7 @@ public class Stopwatch {
 
     public static String getDuration(LocalDateTime startTime, LocalDateTime endTime, String event) {
         Duration duration = Duration.between(startTime, endTime);
-        return event+" time: "+duration.toNanos()/1000000000.0;
+        return event+" time: "+duration.toNanos()/1000000000.0 + "s";
     }
 
     public static void randomSleep(int startRange, int endRange) throws InterruptedException {
