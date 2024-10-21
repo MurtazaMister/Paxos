@@ -57,18 +57,17 @@ public class CsvFileService {
     @Lazy
     private ClientService clientService;
 
-    public void readAndExecuteCsvFile() {
-        readAndExecuteCsvFile(filePath);
+    public void readAndExecuteCsvFile(BufferedReader inputReader) {
+        readAndExecuteCsvFile(filePath, inputReader);
     }
 
-    public void readAndExecuteCsvFile(String filePath) {
+    public void readAndExecuteCsvFile(String filePath, BufferedReader inputReader) {
         Path path = Paths.get(filePath);
         char baseUname = 'a';
         String url;
         List<Integer> ports = portUtil.portPoolGenerator();
 
-        try (BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
-            Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
+        try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT)){
 
             int currentSetNumber = 0;
@@ -132,6 +131,13 @@ public class CsvFileService {
                 });
 
             }
+
+            do {
+                boolean exit = promptUser(inputReader);
+                if(exit){
+                    return;
+                }
+            } while(true);
         }
         catch (IOException e) {
             log.error("Error reading csv file: {}", e.getMessage());

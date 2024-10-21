@@ -193,10 +193,10 @@ public class ClientService {
                                 for(int i = 1;i<parts.length;i++) {
                                     filePath += parts[i] + " ";
                                 }
-                                csvFileService.readAndExecuteCsvFile(filePath.trim());
+                                csvFileService.readAndExecuteCsvFile(filePath.trim(), reader);
                             }
                             else{
-                                csvFileService.readAndExecuteCsvFile();
+                                csvFileService.readAndExecuteCsvFile(reader);
                             }
                             break;
                         default:
